@@ -72,39 +72,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum {
-    VALUE_INT,
-    VALUE_FLOAT,
-    VALUE_STRING,
-    VALUE_OTHER
-} ValueType;
-
-typedef struct {
-    ValueType type;
-    union {
-        int int_val;
-        float float_val;
-        char *str_val;
-    } value;
-} NodeValue;
-
-typedef struct Node {
-    char *name;
-    int line;
-    NodeValue value;
-    struct Node *next;
-    struct Node *child;
-} Node;
+#include "node.h"
 
 Node *root = NULL;
 int has_error = 0;
 
-Node *create_node(const char *name, int line, NodeValue value);
-void print_tree(Node *node, int indent);
-void free_tree(Node *node);
 
-#line 108 "syntax.tab.c"
+
+#line 83 "syntax.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -187,11 +162,11 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 40 "syntax.y"
+#line 15 "syntax.y"
 
   struct Node* node;
 
-#line 195 "syntax.tab.c"
+#line 170 "syntax.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -586,12 +561,12 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    91,    91,    98,   104,   109,   114,   118,   126,   130,
-     137,   141,   147,   152,   158,   163,   168,   174,   178,   185,
-     190,   196,   201,   207,   214,   221,   227,   232,   236,   240,
-     244,   249,   255,   262,   268,   272,   279,   283,   290,   294,
-     301,   306,   311,   316,   321,   326,   331,   336,   341,   345,
-     349,   353,   358,   362,   367,   372,   376,   380,   386,   391
+       0,    66,    66,    73,    79,    84,    89,    93,   101,   105,
+     112,   116,   122,   127,   133,   138,   143,   149,   153,   160,
+     165,   171,   176,   182,   189,   196,   202,   207,   211,   215,
+     219,   224,   230,   237,   243,   247,   254,   258,   265,   269,
+     276,   281,   286,   291,   296,   301,   306,   311,   316,   320,
+     324,   328,   333,   337,   342,   347,   351,   355,   361,   366
 };
 #endif
 
@@ -1570,558 +1545,558 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 91 "syntax.y"
+#line 66 "syntax.y"
                     {
-    (yyval.node) = create_node("Program", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Program", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
     root = (yyval.node);
 }
-#line 1580 "syntax.tab.c"
+#line 1555 "syntax.tab.c"
     break;
 
   case 3:
-#line 98 "syntax.y"
+#line 73 "syntax.y"
                               {
-    (yyval.node) = create_node("ExtDefList", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("ExtDefList", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-1].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1590 "syntax.tab.c"
+#line 1565 "syntax.tab.c"
     break;
 
   case 4:
-#line 104 "syntax.y"
+#line 79 "syntax.y"
             {
-    (yyval.node) = create_node("", 0, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("", 0, VALUE_OTHER);
 }
-#line 1598 "syntax.tab.c"
+#line 1573 "syntax.tab.c"
     break;
 
   case 5:
-#line 109 "syntax.y"
+#line 84 "syntax.y"
                                   {
-    (yyval.node) = create_node("ExtDef", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("ExtDef", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[-1].node);
 }
-#line 1608 "syntax.tab.c"
+#line 1583 "syntax.tab.c"
     break;
 
   case 6:
-#line 114 "syntax.y"
+#line 89 "syntax.y"
                           {
-    (yyval.node) = create_node("ExtDef", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("ExtDef", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-1].node);
 }
-#line 1617 "syntax.tab.c"
+#line 1592 "syntax.tab.c"
     break;
 
   case 7:
-#line 118 "syntax.y"
+#line 93 "syntax.y"
                                    {
-    (yyval.node) = create_node("ExtDef", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("ExtDef", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[-1].node);
     (yyval.node)->next->next = (yyvsp[0].node);
 }
-#line 1628 "syntax.tab.c"
+#line 1603 "syntax.tab.c"
     break;
 
   case 8:
-#line 126 "syntax.y"
+#line 101 "syntax.y"
                    {
-    (yyval.node) = create_node("ExtDecList", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("ExtDecList", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1637 "syntax.tab.c"
+#line 1612 "syntax.tab.c"
     break;
 
   case 9:
-#line 130 "syntax.y"
+#line 105 "syntax.y"
                                       {
-    (yyval.node) = create_node("ExtDecList", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("ExtDecList", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1647 "syntax.tab.c"
+#line 1622 "syntax.tab.c"
     break;
 
   case 10:
-#line 137 "syntax.y"
+#line 112 "syntax.y"
                 {
-    (yyval.node) = create_node("Specifier", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Specifier", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1656 "syntax.tab.c"
+#line 1631 "syntax.tab.c"
     break;
 
   case 11:
-#line 141 "syntax.y"
+#line 116 "syntax.y"
                             {
-    (yyval.node) = create_node("Specifier", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Specifier", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1665 "syntax.tab.c"
+#line 1640 "syntax.tab.c"
     break;
 
   case 12:
-#line 147 "syntax.y"
+#line 122 "syntax.y"
                                              {
-    (yyval.node) = create_node("StructSpecifier", (yylsp[-4]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("StructSpecifier", (yylsp[-4]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-3].node);
     (yyval.node)->next = (yyvsp[-1].node);
 }
-#line 1675 "syntax.tab.c"
+#line 1650 "syntax.tab.c"
     break;
 
   case 13:
-#line 152 "syntax.y"
+#line 127 "syntax.y"
                              {
-    (yyval.node) = create_node("StructSpecifier", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("StructSpecifier", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1684 "syntax.tab.c"
+#line 1659 "syntax.tab.c"
     break;
 
   case 14:
-#line 158 "syntax.y"
+#line 133 "syntax.y"
            {
-    (yyval.node) = create_node("OptTag", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("OptTag", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1693 "syntax.tab.c"
+#line 1668 "syntax.tab.c"
     break;
 
   case 15:
-#line 163 "syntax.y"
+#line 138 "syntax.y"
         {
-    (yyval.node) = create_node("OptTag", 0, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("OptTag", 0, VALUE_OTHER);
 }
-#line 1701 "syntax.tab.c"
+#line 1676 "syntax.tab.c"
     break;
 
   case 16:
-#line 168 "syntax.y"
+#line 143 "syntax.y"
         {
-    (yyval.node) = create_node("Tag", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Tag", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1710 "syntax.tab.c"
+#line 1685 "syntax.tab.c"
     break;
 
   case 17:
-#line 174 "syntax.y"
+#line 149 "syntax.y"
            {
-    (yyval.node) = create_node("VarDec", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("VarDec", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1719 "syntax.tab.c"
+#line 1694 "syntax.tab.c"
     break;
 
   case 18:
-#line 178 "syntax.y"
+#line 153 "syntax.y"
                            {
-    (yyval.node) = create_node("VarDec", (yylsp[-3]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("VarDec", (yylsp[-3]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-3].node);
     (yyval.node)->next = (yyvsp[-1].node);
 }
-#line 1729 "syntax.tab.c"
+#line 1704 "syntax.tab.c"
     break;
 
   case 19:
-#line 185 "syntax.y"
+#line 160 "syntax.y"
                          {
-    (yyval.node) = create_node("FunDec", (yylsp[-3]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("FunDec", (yylsp[-3]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-3].node);
     (yyval.node)->next = (yyvsp[-1].node);
 }
-#line 1739 "syntax.tab.c"
+#line 1714 "syntax.tab.c"
     break;
 
   case 20:
-#line 190 "syntax.y"
+#line 165 "syntax.y"
                    {
-    (yyval.node) = create_node("FunDec", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("FunDec", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
 }
-#line 1748 "syntax.tab.c"
+#line 1723 "syntax.tab.c"
     break;
 
   case 21:
-#line 196 "syntax.y"
+#line 171 "syntax.y"
                                 {
-    (yyval.node) = create_node("VarList", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("VarList", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1758 "syntax.tab.c"
+#line 1733 "syntax.tab.c"
     break;
 
   case 22:
-#line 201 "syntax.y"
+#line 176 "syntax.y"
                    {
-    (yyval.node) = create_node("VarList", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("VarList", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1767 "syntax.tab.c"
+#line 1742 "syntax.tab.c"
     break;
 
   case 23:
-#line 207 "syntax.y"
+#line 182 "syntax.y"
                            {
-    (yyval.node) = create_node("ParamDec", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("ParamDec", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-1].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1777 "syntax.tab.c"
+#line 1752 "syntax.tab.c"
     break;
 
   case 24:
-#line 214 "syntax.y"
+#line 189 "syntax.y"
                                {
-    (yyval.node) = create_node("CompSt", (yylsp[-3]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("CompSt", (yylsp[-3]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[-1].node);
 }
-#line 1787 "syntax.tab.c"
+#line 1762 "syntax.tab.c"
     break;
 
   case 25:
-#line 221 "syntax.y"
+#line 196 "syntax.y"
                         {
-    (yyval.node) = create_node("StmtList", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("StmtList", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-1].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1797 "syntax.tab.c"
+#line 1772 "syntax.tab.c"
     break;
 
   case 26:
-#line 227 "syntax.y"
+#line 202 "syntax.y"
           {
-    (yyval.node) = create_node("", 0, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("", 0, VALUE_OTHER);
 }
-#line 1805 "syntax.tab.c"
+#line 1780 "syntax.tab.c"
     break;
 
   case 27:
-#line 232 "syntax.y"
+#line 207 "syntax.y"
                {
-    (yyval.node) = create_node("Stmt", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Stmt", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-1].node);
 }
-#line 1814 "syntax.tab.c"
+#line 1789 "syntax.tab.c"
     break;
 
   case 28:
-#line 236 "syntax.y"
+#line 211 "syntax.y"
                  {
-    (yyval.node) = create_node("Stmt", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Stmt", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1823 "syntax.tab.c"
+#line 1798 "syntax.tab.c"
     break;
 
   case 29:
-#line 240 "syntax.y"
+#line 215 "syntax.y"
                           {
-    (yyval.node) = create_node("Stmt", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Stmt", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-1].node);
 }
-#line 1832 "syntax.tab.c"
+#line 1807 "syntax.tab.c"
     break;
 
   case 30:
-#line 244 "syntax.y"
+#line 219 "syntax.y"
                                                   {
-    (yyval.node) = create_node("Stmt", (yylsp[-4]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Stmt", (yylsp[-4]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1842 "syntax.tab.c"
+#line 1817 "syntax.tab.c"
     break;
 
   case 31:
-#line 249 "syntax.y"
+#line 224 "syntax.y"
                                       {
-    (yyval.node) = create_node("Stmt", (yylsp[-6]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Stmt", (yylsp[-6]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-4].node);
     (yyval.node)->next = (yyvsp[-2].node);
     (yyval.node)->next->next = (yyvsp[0].node);
 }
-#line 1853 "syntax.tab.c"
+#line 1828 "syntax.tab.c"
     break;
 
   case 32:
-#line 255 "syntax.y"
+#line 230 "syntax.y"
                                {
-    (yyval.node) = create_node("Stmt", (yylsp[-4]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Stmt", (yylsp[-4]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1863 "syntax.tab.c"
+#line 1838 "syntax.tab.c"
     break;
 
   case 33:
-#line 262 "syntax.y"
+#line 237 "syntax.y"
                      {
-    (yyval.node) = create_node("DefList", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("DefList", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-1].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1873 "syntax.tab.c"
+#line 1848 "syntax.tab.c"
     break;
 
   case 34:
-#line 268 "syntax.y"
+#line 243 "syntax.y"
         {
-    (yyval.node) = create_node("", 0, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("", 0, VALUE_OTHER);
 }
-#line 1881 "syntax.tab.c"
+#line 1856 "syntax.tab.c"
     break;
 
   case 35:
-#line 272 "syntax.y"
+#line 247 "syntax.y"
                             { 
-        (yyval.node) = create_node("Def", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+        (yyval.node) = create_node("Def", (yylsp[-2]).first_line, VALUE_OTHER);
         (yyval.node)->child = (yyvsp[-2].node);
         (yyval.node)->next = (yyvsp[-1].node);
 }
-#line 1891 "syntax.tab.c"
+#line 1866 "syntax.tab.c"
     break;
 
   case 36:
-#line 279 "syntax.y"
+#line 254 "syntax.y"
              {
-    (yyval.node) = create_node("DecList", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("DecList", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1900 "syntax.tab.c"
+#line 1875 "syntax.tab.c"
     break;
 
   case 37:
-#line 283 "syntax.y"
+#line 258 "syntax.y"
                             {
-    (yyval.node) = create_node("DecList", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("DecList", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1910 "syntax.tab.c"
+#line 1885 "syntax.tab.c"
     break;
 
   case 38:
-#line 290 "syntax.y"
+#line 265 "syntax.y"
             {
-    (yyval.node) = create_node("Dec", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Dec", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 1919 "syntax.tab.c"
+#line 1894 "syntax.tab.c"
     break;
 
   case 39:
-#line 294 "syntax.y"
+#line 269 "syntax.y"
                               {
-    (yyval.node) = create_node("Dec", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Dec", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1929 "syntax.tab.c"
+#line 1904 "syntax.tab.c"
     break;
 
   case 40:
-#line 301 "syntax.y"
+#line 276 "syntax.y"
                       {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1939 "syntax.tab.c"
+#line 1914 "syntax.tab.c"
     break;
 
   case 41:
-#line 306 "syntax.y"
+#line 281 "syntax.y"
                       {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1949 "syntax.tab.c"
+#line 1924 "syntax.tab.c"
     break;
 
   case 42:
-#line 311 "syntax.y"
+#line 286 "syntax.y"
                      {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1959 "syntax.tab.c"
+#line 1934 "syntax.tab.c"
     break;
 
   case 43:
-#line 316 "syntax.y"
+#line 291 "syntax.y"
                         {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1969 "syntax.tab.c"
+#line 1944 "syntax.tab.c"
     break;
 
   case 44:
-#line 321 "syntax.y"
+#line 296 "syntax.y"
                        {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1979 "syntax.tab.c"
+#line 1954 "syntax.tab.c"
     break;
 
   case 45:
-#line 326 "syntax.y"
+#line 301 "syntax.y"
                         {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1989 "syntax.tab.c"
+#line 1964 "syntax.tab.c"
     break;
 
   case 46:
-#line 331 "syntax.y"
+#line 306 "syntax.y"
                        {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 1999 "syntax.tab.c"
+#line 1974 "syntax.tab.c"
     break;
 
   case 47:
-#line 336 "syntax.y"
+#line 311 "syntax.y"
                       {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 2009 "syntax.tab.c"
+#line 1984 "syntax.tab.c"
     break;
 
   case 48:
-#line 341 "syntax.y"
+#line 316 "syntax.y"
                     {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-1].node);
 }
-#line 2018 "syntax.tab.c"
+#line 1993 "syntax.tab.c"
     break;
 
   case 49:
-#line 345 "syntax.y"
+#line 320 "syntax.y"
                     {
-    (yyval.node) = create_node("Exp", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 2027 "syntax.tab.c"
+#line 2002 "syntax.tab.c"
     break;
 
   case 50:
-#line 349 "syntax.y"
+#line 324 "syntax.y"
                   {
-    (yyval.node) = create_node("Exp", (yylsp[-1]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-1]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 2036 "syntax.tab.c"
+#line 2011 "syntax.tab.c"
     break;
 
   case 51:
-#line 353 "syntax.y"
+#line 328 "syntax.y"
                         {
-    (yyval.node) = create_node("Exp", (yylsp[-3]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-3]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-3].node);
     (yyval.node)->next = (yyvsp[-1].node);
 }
-#line 2046 "syntax.tab.c"
+#line 2021 "syntax.tab.c"
     break;
 
   case 52:
-#line 358 "syntax.y"
+#line 333 "syntax.y"
                    {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
 }
-#line 2055 "syntax.tab.c"
+#line 2030 "syntax.tab.c"
     break;
 
   case 53:
-#line 362 "syntax.y"
+#line 337 "syntax.y"
                         {
-    (yyval.node) = create_node("Exp", (yylsp[-3]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-3]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-3].node);
     (yyval.node)->next = (yyvsp[-1].node);
 }
-#line 2065 "syntax.tab.c"
+#line 2040 "syntax.tab.c"
     break;
 
   case 54:
-#line 367 "syntax.y"
+#line 342 "syntax.y"
                      {
-    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 2075 "syntax.tab.c"
+#line 2050 "syntax.tab.c"
     break;
 
   case 55:
-#line 372 "syntax.y"
+#line 347 "syntax.y"
              {
-    (yyval.node) = create_node("Exp", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 2084 "syntax.tab.c"
+#line 2059 "syntax.tab.c"
     break;
 
   case 56:
-#line 376 "syntax.y"
+#line 351 "syntax.y"
               {
-    (yyval.node) = create_node("Exp", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 2093 "syntax.tab.c"
+#line 2068 "syntax.tab.c"
     break;
 
   case 57:
-#line 380 "syntax.y"
+#line 355 "syntax.y"
                 {
-    (yyval.node) = create_node("Exp", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Exp", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 2102 "syntax.tab.c"
+#line 2077 "syntax.tab.c"
     break;
 
   case 58:
-#line 386 "syntax.y"
+#line 361 "syntax.y"
                      {
-    (yyval.node) = create_node("Args", (yylsp[-2]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Args", (yylsp[-2]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[-2].node);
     (yyval.node)->next = (yyvsp[0].node);
 }
-#line 2112 "syntax.tab.c"
+#line 2087 "syntax.tab.c"
     break;
 
   case 59:
-#line 391 "syntax.y"
+#line 366 "syntax.y"
               {
-    (yyval.node) = create_node("Args", (yylsp[0]).first_line, (NodeValue){VALUE_OTHER});
+    (yyval.node) = create_node("Args", (yylsp[0]).first_line, VALUE_OTHER);
     (yyval.node)->child = (yyvsp[0].node);
 }
-#line 2121 "syntax.tab.c"
+#line 2096 "syntax.tab.c"
     break;
 
 
-#line 2125 "syntax.tab.c"
+#line 2100 "syntax.tab.c"
 
       default: break;
     }
@@ -2359,14 +2334,35 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 397 "syntax.y"
+#line 372 "syntax.y"
 
 
-Node *create_node(const char *name, int line, NodeValue value) {
+Node *create_node(const char *name, int line, ValueType type, ...) {
     Node *new_node = (Node *)malloc(sizeof(Node));
     new_node->name = strdup(name);
     new_node->line = line;
-    new_node->value = value;
+    new_node->value.type = type;
+
+    va_list args;
+    va_start(args, type);
+
+    switch (type) {
+        case VALUE_INT:
+            new_node->value.value.int_val = va_arg(args, int);
+            break;
+        case VALUE_FLOAT:
+            new_node->value.value.float_val = va_arg(args, double);
+            break;
+        case VALUE_STRING:
+            new_node->value.value.str_val = va_arg(args, char *);
+            break;
+        case VALUE_OTHER:
+            // VALUE_OTHER 类型不需要额外的值
+            break;
+    }
+
+    va_end(args);
+
     new_node->next = NULL;
     new_node->child = NULL;
     return new_node;

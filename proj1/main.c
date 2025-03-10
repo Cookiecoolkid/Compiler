@@ -6,6 +6,8 @@ extern FILE *yyin;
 
 extern int has_error;
 extern struct Node* root;  // 根节点
+extern void print_tree(struct Node *node, int indent);
+extern void free_tree(struct Node *node);
 
 int main(int argc, char **argv) {
   if (argc <= 1) {

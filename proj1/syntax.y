@@ -4,37 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum {
-    VALUE_INT,
-    VALUE_FLOAT,
-    VALUE_STRING,
-    VALUE_OTHER
-} ValueType;
-
-typedef struct {
-    ValueType type;
-    union {
-        int int_val;
-        float float_val;
-        char *str_val;
-    } value;
-} NodeValue;
-
-typedef struct Node {
-    char *name;
-    int line;
-    NodeValue value;
-    struct Node *next;
-    struct Node *child;
-} Node;
+#include "node.h"
 
 Node *root = NULL;
 int has_error = 0;
 
-Node *create_node(const char *name, int line, NodeValue value);
-void print_tree(Node *node, int indent);
-void free_tree(Node *node);
+
 %}
 
 %union {
@@ -89,34 +64,34 @@ void free_tree(Node *node);
 %%
 
 Program: ExtDefList {
-    $$ = create_node("Program", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Program", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     root = $$;
 }
          ;
 
 ExtDefList: ExtDef ExtDefList {
-    $$ = create_node("ExtDefList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("ExtDefList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $2;
 }
             | /* empty */
             {
-    $$ = create_node("", 0, (NodeValue){VALUE_OTHER});
+    $$ = create_node("", 0, VALUE_OTHER);
 }
             ;
 
 ExtDef: Specifier ExtDecList SEMI {
-    $$ = create_node("ExtDef", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $2;
 }
          | Specifier SEMI {
-    $$ = create_node("ExtDef", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
          | Specifier FunDec CompSt {
-    $$ = create_node("ExtDef", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $2;
     $$->next->next = $3;
@@ -124,283 +99,304 @@ ExtDef: Specifier ExtDecList SEMI {
           ;
 
 ExtDecList: VarDec {
-    $$ = create_node("ExtDecList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("ExtDecList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
             | VarDec COMMA ExtDecList {
-    $$ = create_node("ExtDecList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("ExtDecList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
             ;
 
 Specifier: TYPE {
-    $$ = create_node("Specifier", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Specifier", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
           | StructSpecifier {
-    $$ = create_node("Specifier", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Specifier", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
           ;
 
 StructSpecifier: STRUCT OptTag LC DefList RC {
-    $$ = create_node("StructSpecifier", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("StructSpecifier", @1.first_line, VALUE_OTHER);
     $$->child = $2;
     $$->next = $4;
 }
                 | STRUCT Tag {
-    $$ = create_node("StructSpecifier", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("StructSpecifier", @1.first_line, VALUE_OTHER);
     $$->child = $2;
 }
                 ;
 
 OptTag: ID {
-    $$ = create_node("OptTag", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("OptTag", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | /* empty */
         {
-    $$ = create_node("OptTag", 0, (NodeValue){VALUE_OTHER});
+    $$ = create_node("OptTag", 0, VALUE_OTHER);
 }
         ;
 
 Tag: ID {
-    $$ = create_node("Tag", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Tag", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
     ;
 
 VarDec: ID {
-    $$ = create_node("VarDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("VarDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | VarDec LB INT RB {
-    $$ = create_node("VarDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("VarDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         ;
 
 FunDec: ID LP VarList RP {
-    $$ = create_node("FunDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("FunDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | ID LP RP {
-    $$ = create_node("FunDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("FunDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         ;
 
 VarList: ParamDec COMMA VarList {
-    $$ = create_node("VarList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("VarList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | ParamDec {
-    $$ = create_node("VarList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("VarList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         ;
 
 ParamDec: Specifier VarDec {
-    $$ = create_node("ParamDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("ParamDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $2;
 }
           ;
 
 CompSt: LC DefList StmtList RC {
-    $$ = create_node("CompSt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("CompSt", @1.first_line, VALUE_OTHER);
     $$->child = $2;
     $$->next = $3;
 }
         ;
 
 StmtList: Stmt StmtList {
-    $$ = create_node("StmtList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("StmtList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $2;
 }
           | /* empty */
           {
-    $$ = create_node("", 0, (NodeValue){VALUE_OTHER});
+    $$ = create_node("", 0, VALUE_OTHER);
 }
           ;
 
 Stmt: Exp SEMI {
-    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | CompSt {
-    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | RETURN Exp SEMI {
-    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
     $$->child = $2;
 }
         | IF LP Exp RP Stmt %prec LOWER_THAN_ELSE {
-    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
     $$->child = $3;
     $$->next = $5;
 }
         | IF LP Exp RP Stmt ELSE Stmt {
-    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
     $$->child = $3;
     $$->next = $5;
     $$->next->next = $7;
 }
         | WHILE LP Exp RP Stmt {
-    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
     $$->child = $3;
     $$->next = $5;
 }
         ;
 
 DefList: Def DefList {
-    $$ = create_node("DefList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("DefList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $2;
 }
         | /* empty */
         {
-    $$ = create_node("", 0, (NodeValue){VALUE_OTHER});
+    $$ = create_node("", 0, VALUE_OTHER);
 }
 
 Def: Specifier DecList SEMI { 
-        $$ = create_node("Def", @1.first_line, (NodeValue){VALUE_OTHER});
+        $$ = create_node("Def", @1.first_line, VALUE_OTHER);
         $$->child = $1;
         $$->next = $2;
 }
         ;
 
 DecList: Dec {
-    $$ = create_node("DecList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("DecList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | Dec COMMA DecList {
-    $$ = create_node("DecList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("DecList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         ;
 
 Dec: VarDec {
-    $$ = create_node("Dec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Dec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | VarDec ASSIGNOP Exp {
-    $$ = create_node("Dec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Dec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         ;
 
 Exp: Exp ASSIGNOP Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp AND Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp OR Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp RELOP Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp PLUS Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp MINUS Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp STAR Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp DIV Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | LP Exp RP {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $2;
 }
         | MINUS Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $2;
 }
         | NOT Exp {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $2;
 }
         | ID LP Args RP {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | ID LP RP {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | Exp LB Exp RB {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp DOT ID {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | ID {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | INT {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         | FLOAT {
-    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         ;
 
 Args: Exp COMMA Args {
-    $$ = create_node("Args", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Args", @1.first_line, VALUE_OTHER);
     $$->child = $1;
     $$->next = $3;
 }
         | Exp {
-    $$ = create_node("Args", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$ = create_node("Args", @1.first_line, VALUE_OTHER);
     $$->child = $1;
 }
         ;
 
 %%
 
-Node *create_node(const char *name, int line, NodeValue value) {
+Node *create_node(const char *name, int line, ValueType type, ...) {
     Node *new_node = (Node *)malloc(sizeof(Node));
     new_node->name = strdup(name);
     new_node->line = line;
-    new_node->value = value;
+    new_node->value.type = type;
+
+    va_list args;
+    va_start(args, type);
+
+    switch (type) {
+        case VALUE_INT:
+            new_node->value.value.int_val = va_arg(args, int);
+            break;
+        case VALUE_FLOAT:
+            new_node->value.value.float_val = va_arg(args, double);
+            break;
+        case VALUE_STRING:
+            new_node->value.value.str_val = va_arg(args, char *);
+            break;
+        case VALUE_OTHER:
+            // VALUE_OTHER 类型不需要额外的值
+            break;
+    }
+
+    va_end(args);
+
     new_node->next = NULL;
     new_node->child = NULL;
     return new_node;
