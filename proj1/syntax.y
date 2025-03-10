@@ -73,7 +73,7 @@ Program: ExtDefList {
 ExtDefList: ExtDef ExtDefList {
     $$ = create_node("ExtDefList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $2;
+    $$->child->next = $2;
 }
             | /* empty */
             {
@@ -84,17 +84,19 @@ ExtDefList: ExtDef ExtDefList {
 ExtDef: Specifier ExtDecList SEMI {
     $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $2;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
          | Specifier SEMI {
     $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
     $$->child = $1;
+    $$->child->next = $2;
 }
          | Specifier FunDec CompSt {
     $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $2;
-    $$->next->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
           ;
 
@@ -121,12 +123,16 @@ Specifier: TYPE {
 
 StructSpecifier: STRUCT OptTag LC DefList RC {
     $$ = create_node("StructSpecifier", @1.first_line, VALUE_OTHER);
-    $$->child = $2;
-    $$->next = $4;
+    $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
+    $$->child->next->next->next = $4;
+    $$->child->next->next->next->next = $5;
 }
                 | STRUCT Tag {
     $$ = create_node("StructSpecifier", @1.first_line, VALUE_OTHER);
-    $$->child = $2;
+    $$->child = $1;
+    $$->child->next = $2;
 }
                 ;
 
@@ -153,25 +159,32 @@ VarDec: ID {
         | VarDec LB INT RB {
     $$ = create_node("VarDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
+    $$->child->next->next->next = $4;
 }
         ;
 
 FunDec: ID LP VarList RP {
     $$ = create_node("FunDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
+    $$->child->next->next->next = $4;
 }
         | ID LP RP {
     $$ = create_node("FunDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         ;
 
 VarList: ParamDec COMMA VarList {
     $$ = create_node("VarList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
 }
         | ParamDec {
     $$ = create_node("VarList", @1.first_line, VALUE_OTHER);
@@ -182,21 +195,23 @@ VarList: ParamDec COMMA VarList {
 ParamDec: Specifier VarDec {
     $$ = create_node("ParamDec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $2;
+    $$->child->next = $2;
 }
           ;
 
 CompSt: LC DefList StmtList RC {
     $$ = create_node("CompSt", @1.first_line, VALUE_OTHER);
-    $$->child = $2;
-    $$->next = $3;
+    $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
+    $$->child->next->next->next = $4;
 }
         ;
 
 StmtList: Stmt StmtList {
     $$ = create_node("StmtList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $2;
+    $$->child->next = $2;
 }
           | /* empty */
           {
@@ -207,6 +222,7 @@ StmtList: Stmt StmtList {
 Stmt: Exp SEMI {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
     $$->child = $1;
+    $$->child->next = $2;
 }
         | CompSt {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
@@ -214,30 +230,42 @@ Stmt: Exp SEMI {
 }
         | RETURN Exp SEMI {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $2;
+    $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
 }
         | IF LP Exp RP Stmt %prec LOWER_THAN_ELSE {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $3;
-    $$->next = $5;
+    $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
+    $$->child->next->next->next = $4;
+    $$->child->next->next->next->next = $5;
 }
         | IF LP Exp RP Stmt ELSE Stmt {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $3;
-    $$->next = $5;
-    $$->next->next = $7;
+    $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
+    $$->child->next->next->next = $4;
+    $$->child->next->next->next->next = $5;
+    $$->child->next->next->next->next->next = $6;
+    $$->child->next->next->next->next->next->next = $7;
 }
         | WHILE LP Exp RP Stmt {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $3;
-    $$->next = $5;
+    $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
+    $$->child->next->next->next = $4;
+    $$->child->next->next->next->next = $5;
 }
         ;
 
 DefList: Def DefList {
     $$ = create_node("DefList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $2;
+    $$->child->next = $2;
 }
         | /* empty */
         {
@@ -247,8 +275,9 @@ DefList: Def DefList {
 Def: Specifier DecList SEMI { 
         $$ = create_node("Def", @1.first_line, VALUE_OTHER);
         $$->child = $1;
-        $$->next = $2;
-}
+        $$->child->next = $2;
+        $$->child->next->next = $3;
+}       
         ;
 
 DecList: Dec {
@@ -258,7 +287,8 @@ DecList: Dec {
         | Dec COMMA DecList {
     $$ = create_node("DecList", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         ;
 
@@ -269,80 +299,100 @@ Dec: VarDec {
         | VarDec ASSIGNOP Exp {
     $$ = create_node("Dec", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         ;
 
 Exp: Exp ASSIGNOP Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | Exp AND Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | Exp OR Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | Exp RELOP Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | Exp PLUS Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | Exp MINUS Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | Exp STAR Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | Exp DIV Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | LP Exp RP {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $2;
+    $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;
 }
         | MINUS Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $2;
+    $$->child = $1;
+    $$->child->next = $2;
 }
         | NOT Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $2;
+    $$->child = $1;
+    $$->child->next = $2;
 }
         | ID LP Args RP {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
+    $$->child->next->next->next = $4;
 }
         | ID LP RP {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
 }
         | Exp LB Exp RB {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
+    $$->child->next->next->next = $4;
 }
         | Exp DOT ID {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
 }
         | ID {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
@@ -361,7 +411,8 @@ Exp: Exp ASSIGNOP Exp {
 Args: Exp COMMA Args {
     $$ = create_node("Args", @1.first_line, VALUE_OTHER);
     $$->child = $1;
-    $$->next = $3;
+    $$->child->next = $2;
+    $$->child->next->next = $3;     
 }
         | Exp {
     $$ = create_node("Args", @1.first_line, VALUE_OTHER);

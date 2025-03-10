@@ -5,7 +5,7 @@ extern int yylex();
 extern FILE *yyin;
 
 extern int has_error;
-extern struct Node* root;  // 根节点
+extern struct Node* root;
 extern void print_tree(struct Node *node, int indent);
 extern void free_tree(struct Node *node);
 
