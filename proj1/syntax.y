@@ -1,157 +1,451 @@
+%locations
 %{
 #include "lex.yy.c"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-%locations
-// Global variables for tracking indent and error flags
-int indent = 0;
+typedef enum {
+    VALUE_INT,
+    VALUE_FLOAT,
+    VALUE_STRING,
+    VALUE_OTHER
+} ValueType;
+
+typedef struct {
+    ValueType type;
+    union {
+        int int_val;
+        float float_val;
+        char *str_val;
+    } value;
+} NodeValue;
+
+typedef struct Node {
+    char *name;
+    int line;
+    NodeValue value;
+    struct Node *next;
+    struct Node *child;
+} Node;
+
+Node *root = NULL;
+int has_error = 0;
+
+Node *create_node(const char *name, int line, NodeValue value);
+void print_tree(Node *node, int indent);
+void free_tree(Node *node);
 %}
 
-/* Declare types for tokens */
 %union {
-  int type_int;
-  float type_float;
-  char *type_str;
+  struct Node* node;
 }
 
-%token STRUCT
-%token RETURN
-%token IF
-%token ELSE
-%token WHILE
-%token TYPE
-%token <type_int> INT
-%token <type_float> FLOAT
-%token <type_str> ID
-%token SEMI
-%token COMMA
-%token ASSIGNOP
-%token RELOP
-%token PLUS
-%token MINUS
-%token STAR
-%token DIV
-%token AND
-%token OR
-%token DOT
-%token NOT
-%token LP
-%token RP
-%token LB
-%token RB
-%token LC
-%token RC
+%type <node> Program ExtDefList ExtDecList ExtDef Specifier FunDec CompSt StmtList Stmt Def DefList DecList Dec Exp Args
+%type <node> StructSpecifier OptTag Tag VarDec VarList ParamDec
 
-%token UMINUS
+%token <node> STRUCT
+%token <node> RETURN
+%token <node> IF
+%token <node> ELSE
+%token <node> WHILE
+%token <node> TYPE
+%token <node> INT
+%token <node> FLOAT
+%token <node> ID
+%token <node> SEMI
+%token <node> COMMA
+%token <node> ASSIGNOP
+%token <node> RELOP
+%token <node> PLUS
+%token <node> MINUS
+%token <node> STAR
+%token <node> DIV
+%token <node> AND
+%token <node> OR
+%token <node> DOT
+%token <node> NOT
+%token <node> LP
+%token <node> RP
+%token <node> LB
+%token <node> RB
+%token <node> LC
+%token <node> RC
 
-// %type <type_float> Exp
-
+%right ASSIGNOP
+%left OR
+%left AND
+%left RELOP
+%left PLUS MINUS
+%left STAR DIV
+%right NOT
+%left DOT
+%left LB RB
+%left LP RP
+%left LC RC
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 
-%right ASSIGNOP NOT UMINUS
-%left LP RP LC RC 
-%left DOT 
-%left OR AND 
-%left RELOP 
-%left PLUS MINUS 
-%left STAR DIV
-
-
 %%
 
-Program: ExtDefList { print_node("Program", @1.first_line); }
+Program: ExtDefList {
+    $$ = create_node("Program", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    root = $$;
+}
          ;
-ExtDefList: ExtDef ExtDefList { print_node("ExtDefList", @1.first_line); }
+
+ExtDefList: ExtDef ExtDefList {
+    $$ = create_node("ExtDefList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $2;
+}
             | /* empty */
+            {
+    $$ = create_node("", 0, (NodeValue){VALUE_OTHER});
+}
             ;
-ExtDef: Specifier ExtDecList SEMI 
-         | Specifier SEMI
-         | Specifier FunDec CompSt
+
+ExtDef: Specifier ExtDecList SEMI {
+    $$ = create_node("ExtDef", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $2;
+}
+         | Specifier SEMI {
+    $$ = create_node("ExtDef", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+         | Specifier FunDec CompSt {
+    $$ = create_node("ExtDef", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $2;
+    $$->next->next = $3;
+}
           ;
-ExtDecList: VarDec 
-            | VarDec COMMA ExtDecList
+
+ExtDecList: VarDec {
+    $$ = create_node("ExtDecList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+            | VarDec COMMA ExtDecList {
+    $$ = create_node("ExtDecList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
             ;
-Specifier: TYPE
-          | StructSpecifier
+
+Specifier: TYPE {
+    $$ = create_node("Specifier", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+          | StructSpecifier {
+    $$ = create_node("Specifier", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
           ;
-StructSpecifier: STRUCT OptTag LC DefList RC
-                | STRUCT Tag
+
+StructSpecifier: STRUCT OptTag LC DefList RC {
+    $$ = create_node("StructSpecifier", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $2;
+    $$->next = $4;
+}
+                | STRUCT Tag {
+    $$ = create_node("StructSpecifier", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $2;
+}
                 ;
-OptTag: ID
+
+OptTag: ID {
+    $$ = create_node("OptTag", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
         | /* empty */
+        {
+    $$ = create_node("OptTag", 0, (NodeValue){VALUE_OTHER});
+}
         ;
-Tag: ID
+
+Tag: ID {
+    $$ = create_node("Tag", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
     ;
-VarDec: ID
-        | VarDec LB INT RB
+
+VarDec: ID {
+    $$ = create_node("VarDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        | VarDec LB INT RB {
+    $$ = create_node("VarDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
         ;
-FunDec: ID LP VarList RP
-        | ID LP RP
+
+FunDec: ID LP VarList RP {
+    $$ = create_node("FunDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | ID LP RP {
+    $$ = create_node("FunDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
         ;
-VarList: ParamDec COMMA VarList
-        | ParamDec
+
+VarList: ParamDec COMMA VarList {
+    $$ = create_node("VarList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | ParamDec {
+    $$ = create_node("VarList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
         ;
-ParamDec: Specifier VarDec
+
+ParamDec: Specifier VarDec {
+    $$ = create_node("ParamDec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $2;
+}
           ;
-CompSt: LC DefList StmtList RC
+
+CompSt: LC DefList StmtList RC {
+    $$ = create_node("CompSt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $2;
+    $$->next = $3;
+}
         ;
-StmtList: Stmt StmtList
+
+StmtList: Stmt StmtList {
+    $$ = create_node("StmtList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $2;
+}
           | /* empty */
+          {
+    $$ = create_node("", 0, (NodeValue){VALUE_OTHER});
+}
           ;
-Stmt: Exp SEMI
-        | CompSt
-        | RETURN Exp SEMI
-        | IF LP Exp RP Stmt %prec LOWER_THAN_ELSE
-        | IF LP Exp RP Stmt ELSE Stmt
-        | WHILE LP Exp RP Stmt
+
+Stmt: Exp SEMI {
+    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        | CompSt {
+    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        | RETURN Exp SEMI {
+    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $2;
+}
+        | IF LP Exp RP Stmt %prec LOWER_THAN_ELSE {
+    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $3;
+    $$->next = $5;
+}
+        | IF LP Exp RP Stmt ELSE Stmt {
+    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $3;
+    $$->next = $5;
+    $$->next->next = $7;
+}
+        | WHILE LP Exp RP Stmt {
+    $$ = create_node("Stmt", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $3;
+    $$->next = $5;
+}
         ;
-DefList: Def DefList
+
+DefList: Def DefList {
+    $$ = create_node("DefList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $2;
+}
         | /* empty */
-        ;
-Def: Specifier DecList SEMI
-        ;
-DecList: Dec
-        | Dec COMMA DecList
-        ;
-Dec: VarDec
-        | VarDec ASSIGNOP Exp
-        ;
-Exp : Exp ASSIGNOP Exp
-        | Exp AND Exp
-        | Exp OR Exp
-        | Exp RELOP Exp
-        | Exp PLUS Exp
-        | Exp MINUS Exp
-        | Exp STAR Exp
-        | Exp DIV Exp
-        | LP Exp RP
-        | UMINUS Exp
-        | NOT Exp
-        | ID LP Args RP
-        | ID LP RP
-        | Exp LB Exp RB
-        | Exp DOT ID
-        | ID
-        | INT
-        | FLOAT
-        ; 
-Args: Exp COMMA Args
-        | Exp
-        ;
-
-%%
-
-// Helper function for printing nodes with correct indentation
-void print_node(const char *name, int line) {
-  for (int i = 0; i < indent; i++) {
-    printf("  ");
-  }
-  printf("%s (%d)\n", name, line);
-  indent += 2;
+        {
+    $$ = create_node("", 0, (NodeValue){VALUE_OTHER});
 }
 
-// Additional print functions for lexical tokens
-void print_token(const char *name, const char *value, int line) {
-  printf("  %s: %s\n", name, value);
+Def: Specifier DecList SEMI { 
+        $$ = create_node("Def", @1.first_line, (NodeValue){VALUE_OTHER});
+        $$->child = $1;
+        $$->next = $2;
+}
+        ;
+
+DecList: Dec {
+    $$ = create_node("DecList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        | Dec COMMA DecList {
+    $$ = create_node("DecList", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        ;
+
+Dec: VarDec {
+    $$ = create_node("Dec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        | VarDec ASSIGNOP Exp {
+    $$ = create_node("Dec", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        ;
+
+Exp: Exp ASSIGNOP Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp AND Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp OR Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp RELOP Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp PLUS Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp MINUS Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp STAR Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp DIV Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | LP Exp RP {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $2;
+}
+        | MINUS Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $2;
+}
+        | NOT Exp {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $2;
+}
+        | ID LP Args RP {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | ID LP RP {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        | Exp LB Exp RB {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp DOT ID {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | ID {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        | INT {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        | FLOAT {
+    $$ = create_node("Exp", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        ;
+
+Args: Exp COMMA Args {
+    $$ = create_node("Args", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+    $$->next = $3;
+}
+        | Exp {
+    $$ = create_node("Args", @1.first_line, (NodeValue){VALUE_OTHER});
+    $$->child = $1;
+}
+        ;
+
+%%
+
+Node *create_node(const char *name, int line, NodeValue value) {
+    Node *new_node = (Node *)malloc(sizeof(Node));
+    new_node->name = strdup(name);
+    new_node->line = line;
+    new_node->value = value;
+    new_node->next = NULL;
+    new_node->child = NULL;
+    return new_node;
+}
+
+void print_tree(Node *node, int indent) {
+    if (!node) return;
+
+    for (int i = 0; i < indent; i++) printf(" ");
+    printf("%s (%d)", node->name, node->line);
+
+    if (node->value.type == VALUE_INT) {
+        printf(", Value: %d", node->value.value.int_val);
+    } else if (node->value.type == VALUE_FLOAT) {
+        printf(", Value: %.2f", node->value.value.float_val);
+    } else if (node->value.type == VALUE_STRING) {
+        printf(", Value: %s", node->value.value.str_val);
+    }
+    printf("\n");
+
+    Node *child = node->child;
+    while (child) {
+        print_tree(child, indent + 2);
+        child = child->next;
+    }
+}
+
+void free_tree(Node *node) {
+    if (!node) return;
+
+    Node *child = node->child;
+    while (child) {
+        Node *temp = child;
+        child = child->next;
+        free_tree(temp);
+    }
+
+    free(node->name);
+    if (node->value.type == VALUE_STRING) {
+        free(node->value.value.str_val);
+    }
+    free(node);
+}
+
+void yyerror(const char* msg) {
+    fprintf(stderr, "Error type B at line %d: %s.\n", yylineno, msg);
+    has_error = 1;
 }
