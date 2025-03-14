@@ -1,5 +1,6 @@
+#line 2 "lex.yy.c"
 
-#line 3 "lex.yy.c"
+#line 4 "lex.yy.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -563,9 +564,9 @@ yylloc.first_line = yylloc.last_line = yylineno; \
 yylloc.first_column = yycolumn; \
 yylloc.last_column = yycolumn + yyleng - 1; \
 yycolumn += yyleng;
-#line 567 "lex.yy.c"
+#line 568 "lex.yy.c"
 
-#line 569 "lex.yy.c"
+#line 570 "lex.yy.c"
 
 #define INITIAL 0
 #define IN_COMMENT 1
@@ -785,7 +786,7 @@ YY_DECL
 	{
 #line 53 "lexical.l"
 
-#line 789 "lex.yy.c"
+#line 790 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1052,7 +1053,7 @@ YY_RULE_SETUP
 #line 100 "lexical.l"
 ECHO;
 	YY_BREAK
-#line 1056 "lex.yy.c"
+#line 1057 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(IN_COMMENT):
 	yyterminate();

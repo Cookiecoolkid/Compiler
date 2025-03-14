@@ -453,7 +453,62 @@ Node *create_node(const char *name, int line, ValueType type, ...) {
     return new_node;
 }
 
+
+int is_unit_token(const char *name) {
+    static const char *unit_tokens[] = {
+        "ID", "LP", "RP", "LB", "RB", "LC", "RC", "SEMI", "COMMA", 
+        "ASSIGNOP", "RELOP", "PLUS", "MINUS", "STAR", "DIV", 
+        "AND", "OR", "DOT", "NOT", "TYPE", "INT", "FLOAT", NULL
+    };
+
+    for (int i = 0; unit_tokens[i] != NULL; i++) {
+        if (strcmp(name, unit_tokens[i]) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
 void print_tree(Node *node, int indent) {
+    if (!node) return;
+
+    // 如果是 "empty" 节点，直接返回，不打印任何内容
+    if (strcmp(node->name, "") == 0) {
+        return;
+    }
+
+    // 打印缩进
+    for (int i = 0; i < indent; i++) printf(" ");
+
+    // 打印节点名称
+    printf("%s", node->name);
+
+    // 如果不是单元 token，打印行号
+    if (!is_unit_token(node->name)) {
+        printf(" (%d)", node->line);
+    }
+
+    // 如果有值，打印值
+    if (node->value.type == VALUE_INT) {
+        printf(": %d", node->value.value.int_val);
+    } else if (node->value.type == VALUE_FLOAT) {
+        printf(": %.2f", node->value.value.float_val);
+    } else if (node->value.type == VALUE_STRING) {
+        printf(": %s", node->value.value.str_val);
+    }
+    printf("\n");
+
+    // 递归打印子节点
+    Node *child = node->child;
+    while (child) {
+        print_tree(child, indent + 2);
+        child = child->next;
+    }
+}
+
+
+/* void print_tree(Node *node, int indent) {
     if (!node) return;
 
     for (int i = 0; i < indent; i++) printf(" ");
@@ -473,7 +528,7 @@ void print_tree(Node *node, int indent) {
         print_tree(child, indent + 2);
         child = child->next;
     }
-}
+} */
 
 void free_tree(Node *node) {
     if (!node) return;
