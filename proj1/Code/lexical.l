@@ -8,6 +8,7 @@
 #include "syntax.tab.h"
 
 extern void yyerror(const char* msg);
+extern int has_error;
 
 
 int yycolumn = 1;
@@ -57,7 +58,7 @@ WHILE "while"
 {ELSE}   { yylval.node = create_node("ELSE", yylineno, VALUE_OTHER); return ELSE; }
 {WHILE}  { yylval.node = create_node("WHILE", yylineno, VALUE_OTHER); return WHILE; }
 {TYPE}   { yylval.node = create_node("TYPE", yylineno, VALUE_STRING, strdup(yytext)); return TYPE; }
-{INT}    { yylval.node = create_node("INT", yylineno, VALUE_INT, atoi(yytext)); return INT; }
+{INT}    { yylval.node = create_node("INT", yylineno, VALUE_INT, yytext); return INT; }
 {FLOAT}  { yylval.node = create_node("FLOAT", yylineno, VALUE_FLOAT, atof(yytext)); return FLOAT; }
 {ID}     { yylval.node = create_node("ID", yylineno, VALUE_STRING, strdup(yytext)); return ID; }
 
@@ -84,10 +85,10 @@ WHILE "while"
 
 "/*"             { BEGIN(IN_COMMENT); }
 <IN_COMMENT>{
-  "/*"           { printf("Error type A at Line %d: Nested comments '%s'\n", yylineno, yytext); }
+  "/*"           { has_error = 1; /* printf("Error type A at Line %d: Nested comments '%s'\n", yylineno, yytext); */ }
   "*"+"/"        { BEGIN(INITIAL); }
   "*"+           ;
-  [^"/*"\n]+     ; 
+  [^"/*"\n]+     ;
   [/]            ; 
   \n             ; 
 }
@@ -95,6 +96,9 @@ WHILE "while"
 
 [ \t] { /* Ignore white spaces */ }
 [\n] { yycolumn = 1; }
-. { printf("Error type A at Line %d: Mysterious character '%s'\n", yylineno, yytext); }
+. { 
+    printf("Error type A at Line %d: Mysterious character \"%s\"\n", yylineno, yytext); 
+    has_error = 1; 
+  }
 
 %%
