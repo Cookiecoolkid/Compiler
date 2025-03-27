@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "node.h"
 
 Node *root = NULL;
@@ -95,6 +96,10 @@ ExtDef: Specifier ExtDecList SEMI {
     $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
     link_nodes($$, $1, $2, $3, NULL);
 }
+| Specifier FunDec SEMI {
+    $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
+    link_nodes($$, $1, $2, $3, NULL);
+}
 | Specifier error SEMI {
     /* yyerror("ExtDef syntax error"); */
 };
@@ -107,7 +112,7 @@ ExtDecList: VarDec {
 }
 | VarDec COMMA ExtDecList {
     $$ = create_node("ExtDecList", @1.first_line, VALUE_OTHER);
-    link_nodes($$, $1, $3, NULL);
+    link_nodes($$, $1, $2, $3, NULL);
 };
 
 /* ------------------------- Specifier ---------------------------*/
@@ -188,7 +193,7 @@ FunDec: ID LP VarList RP {
 
 VarList: ParamDec COMMA VarList {
     $$ = create_node("VarList", @1.first_line, VALUE_OTHER);
-    link_nodes($$, $1, $3, NULL);
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | ParamDec {
     $$ = create_node("VarList", @1.first_line, VALUE_OTHER);
@@ -300,7 +305,7 @@ DecList: Dec {
 }
 | Dec COMMA DecList {
     $$ = create_node("DecList", @1.first_line, VALUE_OTHER);
-    link_nodes($$, $1, $3, NULL);
+    link_nodes($$, $1, $2, $3, NULL);
 };
 
 /* ------------------------- Dec ---------------------------*/
@@ -420,7 +425,7 @@ Exp: Exp ASSIGNOP Exp {
 
 Args: Exp COMMA Args {
     $$ = create_node("Args", @1.first_line, VALUE_OTHER);
-    link_nodes($$, $1, $3, NULL);
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp {
     $$ = create_node("Args", @1.first_line, VALUE_OTHER);
@@ -479,16 +484,18 @@ void link_nodes(Node *parent, ...) {
     va_start(args, parent);
 
     Node *current = parent;
+    bool first_token = true;
     while (1) {
         Node *child = va_arg(args, Node *);
         if (child == NULL) break;
 
-        if (current->child == NULL) {
+        if (first_token) {
             current->child = child;
+            first_token = false;
         } else {
             current->next = child;
-            current = child;
         }
+        current = child;
     }
 
     va_end(args);
