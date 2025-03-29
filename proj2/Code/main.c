@@ -23,7 +23,8 @@ int main(int argc, char **argv) {
   yyparse();
 
   if (!has_error) {
-      print_tree(root, 0);
+      // print_tree(root, 0);
+      check_semantic(root);
   }
 
   free_tree(root);
