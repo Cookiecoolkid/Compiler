@@ -11,6 +11,13 @@ typedef struct Symbol_* Symbol;
 typedef struct RBNode_* RBNode;
 enum Color { RED, BLACK };
 enum Kind { BASIC, ARRAY, STRUCTURE, FUNCTION };
+enum BasicType { INT, FLOAT };
+
+#define BASIC_TYPE_NUM 2
+typedef unsigned int struct_t;
+
+// global struct id, init in initSymbolTable(set to BASIC_TYPE_NUM)
+struct_t structID;
 
 // 定义符号类型
 struct Symbol_ {
@@ -24,7 +31,7 @@ struct Type_ {
     union {
         int basic;
         struct { Type elem; int size; } array;
-        FieldList structure;
+        struct { int ID; FieldList struct_members } structure;
         struct { FieldList params; Type ret; int paramNum; int defined; int declared; } function;
     } u;
 };
@@ -338,6 +345,9 @@ void initSymbolTable(SymbolTable* symTable) {
     symTable->currentScope = createScope();
     symTable->globalStructRoot = NULL;
     symTable->globalFuncRoot = NULL;
+
+    // 初始化全局结构体ID
+    structID = BASIC_TYPE_NUM;
 }
 
 // 进入新作用域

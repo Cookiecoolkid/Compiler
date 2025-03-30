@@ -28,3 +28,4 @@ Node *create_node(const char *name, int line, ValueType type, ...);
 void link_nodes(Node *parent, ...);
 void print_tree(Node *node, int indent);
 void free_tree(Node *node);
+int get_child_num(Node *node);

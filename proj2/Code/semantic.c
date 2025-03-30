@@ -49,7 +49,31 @@ void check_extDef(Node *extDef) {
   //         | Specifier FunDec CompSt
   //         | Specifier FunDec SEMI
   assert(extDef != NULL);
-  // TODO
+
+  int childNum = get_child_num(extDef);
+  assert(childNum == 2 || childNum == 3);
+  Node *specifier = extDef->child;
+  Node *secondChild = specifier->next;
+  Type type = check_specifier(specifier);
+
+
+  // TODO TODO
+  if (secondChild->next == NULL) {
+    // Specifier SEMI
+    return;
+  }
+  assert(childNum == 3);
+  Node *thirdChild = secondChild->next;
+  if (strcmp(secondChild->name, "ExDecList") == 0) {
+    check_extDecList(secondChild, type);
+  } else if (strcmp(thirdChild->name, "CompSt") == 0) {
+    // Defining a function
+    check_funDec(secondChild, type, 1);
+    check_compSt(thirdChild, type);
+  } else {
+    // Function declaration
+    check_funDec(secondChild, type, 0);
+  }
 }
 
 void check_extDecList(Node *extDecList, Type type) {
@@ -61,6 +85,60 @@ void check_extDecList(Node *extDecList, Type type) {
   if (varDec->next != NULL) {
     check_extDecList(varDec->next->next, type);
   }
+}
+
+Type check_specifier(Node *specifier) {
+  // Specifier -> TYPE
+  //            | StructSpecifier
+  assert(specifier != NULL);
+  Node *child = specifier->child;
+  if (strcmp(child->name, "TYPE") == 0) {
+    // Basic type
+    Type type = (Type)malloc(sizeof(struct Type_));
+    type->kind = BASIC;
+    if (strcmp(child->value.value.str_val, "int") == 0) {
+      type->u.basic = INT;
+    } else {
+      type->u.basic = FLOAT;
+    }
+    return type;
+  } else {
+    // StructSpecifier
+    // 在这里 check_structSpecifier 需要检查是结构体的定义(Type = Struct)还是结构体变量的声明(Type = Basic)
+    // 对于每一个结构体定义，都需要在符号表中插入一个新的结构体符号
+    // 对于每一个结构体变量声明，需要检查结构体是否已经定义过，如果没有定义过则报错，其 basic 数值为对应结构体类型的 ID
+    return check_structSpecifier(child);
+  }
+}
+
+Type check_structSpecifier(Node *structSpecifier) {
+  // StructSpecifier -> STRUCT OptTag LC DefList RC
+  //                  | STRUCT Tag
+  assert(structSpecifier != NULL);
+  int childNum = get_child_num(structSpecifier);
+  assert(childNum == 2 || childNum == 5);
+  Node *child = structSpecifier->child;
+  if (childNum == 2) {
+    // STRUCT Tag
+    // 在符号表中查找是否有对应的结构体定义，如果没有则报错
+    // 返回对应结构体的 Type
+    return check_tag(child->next);
+  } else {
+    // STRUCT OptTag LC DefList RC
+    // 在符号表中插入一个新的结构体符号
+    // 返回对应结构体的 Type
+    // TIP 结构体等价不看 OptTag（Name），只看其中成员类型是否一致（不论顺序）
+    char *name = check_optTag(child->next);
+    return check_defList(child->next->next->next, name);
+  }
+}
+
+char *check_optTag(Node *optTag) {
+  // OptTag -> ID
+  //         | empty
+  assert(optTag != NULL);
+  if (optTag->child == NULL) return NULL;
+  return optTag->child->value.value.str_val;
 }
 
 void report_error(enum ErrorType type, int line, const char *msg) {

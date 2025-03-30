@@ -576,3 +576,13 @@ void yyerror(const char* msg) {
     fprintf(stdout, "Error type B at line %d: %s.\n", yylineno, msg);
     has_error = 1;
 }
+
+int get_child_num(Node *node) {
+    int num = 0;
+    Node *child = node->child;
+    while (child) {
+        num++;
+        child = child->next;
+    }
+    return num;
+}
