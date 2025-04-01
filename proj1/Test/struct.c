@@ -1,7 +1,7 @@
-struct circle {
+struct {
     int radius;
     float area;
-};
+} circle;
 
 int main() {
     struct circle c;
