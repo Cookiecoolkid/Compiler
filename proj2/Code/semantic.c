@@ -1,146 +1,291 @@
+#include "semantic.h"
 #include "rb_tree.h"
 #include "node.h"
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
 
-enum ErrorType {
-    UNDEFINED_VARIABLE,          // 错误类型 1：变量在使用时未经定义
-    UNDEFINED_FUNCTION_CALL,     // 错误类型 2：函数在调用时未经定义
-    DUPLICATE_DEFINITION,        // 错误类型 3：变量出现重复定义，或变量与前面定义过的结构体名字重复
-    DUPLICATE_FUNCTION_DEFINITION, // 错误类型 4：函数出现重复定义
-    TYPE_MISMATCH_ASSIGNMENT,    // 错误类型 5：赋值号两边的表达式类型不匹配
-    INVALID_LVALUE_ASSIGNMENT,   // 错误类型 6：赋值号左边出现一个只有右值的表达式
-    OPERATION_TYPE_MISMATCH,     // 错误类型 7：操作数类型不匹配或操作数类型与操作符不匹配
-    RETURN_TYPE_MISMATCH,        // 错误类型 8：return 语句的返回类型与函数定义的返回类型不匹配
-    FUNCTION_ARGUMENT_MISMATCH,  // 错误类型 9：函数调用时实参与形参的数目或类型不匹配
-    ARRAY_ACCESS_ON_NON_ARRAY,   // 错误类型 10：对非数组型变量使用“ [...] ”（数组访问）操作符
-    FUNCTION_CALL_ON_NON_FUNCTION,// 错误类型 11：对普通变量使用“(…)”或“()”（函数调用）操作符
-    NON_INTEGER_ARRAY_INDEX,     // 错误类型 12：数组访问操作符“ [...] ”中出现非整数
-    STRUCTURE_FIELD_ON_NON_STRUCTURE, // 错误类型 13：对非结构体型变量使用“.”操作符
-    UNDEFINED_STRUCTURE_FIELD,   // 错误类型 14：访问结构体中未定义过的域
-    DUPLICATE_STRUCTURE_FIELD,   // 错误类型 15：结构体中域名重复定义
-    NAME_CONFLICT_STRUCTURE_VARIABLE, // 错误类型 16：结构体的名字与前面定义过的结构体或变量的名字重复
-    UNDEFINED_STRUCTURE_USAGE,   // 错误类型 17：直接使用未定义过的结构体来定义变量
-    UNDEFINED_FUNCTION_DECLARATION, // 错误类型 18：函数进行了声明，但没有被定义
-    CONFLICTING_FUNCTION_DECLARATION // 错误类型 19：函数的多次声明互相冲突
-};
+// 全局符号表实例
+extern SymbolTable symTable;
 
-void check_semantic(Node *root) {
-  // Root is "Program"
-  // Program -> ExtDefList
-  assert(root != NULL && root->child != NULL);
-  Node *extDefList = root->child;
-
-  check_extDefList(extDefList);
-}
-
-void check_extDefList(Node *extDefList) {
-  // ExtDefList -> ExtDef ExtDefList
-  //             | empty
-  assert(extDefList != NULL);
-  if (extDefList->child == NULL) return;
-  Node *extDef = extDefList->child;
-  Node *nextExtDefList = extDef->next;
-  check_extDef(extDef);
-  check_extDefList(nextExtDefList);
-}
-
-void check_extDef(Node *extDef) {
-  // ExtDef -> Specifier ExtDecList SEMI
-  //         | Specifier SEMI
-  //         | Specifier FunDec CompSt
-  //         | Specifier FunDec SEMI
-  assert(extDef != NULL);
-
-  int childNum = get_child_num(extDef);
-  assert(childNum == 2 || childNum == 3);
-  Node *specifier = extDef->child;
-  Node *secondChild = specifier->next;
-  Type type = check_specifier(specifier);
-
-
-  // TODO TODO
-  if (secondChild->next == NULL) {
-    // Specifier SEMI
-    return;
-  }
-  assert(childNum == 3);
-  Node *thirdChild = secondChild->next;
-  if (strcmp(secondChild->name, "ExDecList") == 0) {
-    check_extDecList(secondChild, type);
-  } else if (strcmp(thirdChild->name, "CompSt") == 0) {
-    // Defining a function
-    check_funDec(secondChild, type, 1);
-    check_compSt(thirdChild, type);
-  } else {
-    // Function declaration
-    check_funDec(secondChild, type, 0);
-  }
-}
-
-void check_extDecList(Node *extDecList, Type type) {
-  // ExtDecList -> VarDec
-  //             | VarDec COMMA ExtDecList
-  assert(extDecList != NULL);
-  Node *varDec = extDecList->child;
-  check_varDec(varDec, type);
-  if (varDec->next != NULL) {
-    check_extDecList(varDec->next->next, type);
-  }
-}
-
-Type check_specifier(Node *specifier) {
-  // Specifier -> TYPE
-  //            | StructSpecifier
-  assert(specifier != NULL);
-  Node *child = specifier->child;
-  if (strcmp(child->name, "TYPE") == 0) {
-    // Basic type
-    Type type = (Type)malloc(sizeof(struct Type_));
-    type->kind = BASIC;
-    if (strcmp(child->value.value.str_val, "int") == 0) {
-      type->u.basic = INT;
-    } else {
-      type->u.basic = FLOAT;
-    }
-    return type;
-  } else {
-    // StructSpecifier
-    // 在这里 check_structSpecifier 需要检查是结构体的定义(Type = Struct)还是结构体变量的声明(Type = Basic)
-    // 对于每一个结构体定义，都需要在符号表中插入一个新的结构体符号
-    // 对于每一个结构体变量声明，需要检查结构体是否已经定义过，如果没有定义过则报错，其 basic 数值为对应结构体类型的 ID
-    return check_structSpecifier(child);
-  }
-}
-
-Type check_structSpecifier(Node *structSpecifier) {
-  // StructSpecifier -> STRUCT OptTag LC DefList RC
-  //                  | STRUCT Tag
-  assert(structSpecifier != NULL);
-  int childNum = get_child_num(structSpecifier);
-  assert(childNum == 2 || childNum == 5);
-  Node *child = structSpecifier->child;
-  if (childNum == 2) {
-    // STRUCT Tag
-    // 在符号表中查找是否有对应的结构体定义，如果没有则报错
-    // 返回对应结构体的 Type
-    return check_tag(child->next);
-  } else {
-    // STRUCT OptTag LC DefList RC
-    // 在符号表中插入一个新的结构体符号
-    // 返回对应结构体的 Type
-    // TIP 结构体等价不看 OptTag（Name），只看其中成员类型是否一致（不论顺序）
-    char *name = check_optTag(child->next);
-    return check_defList(child->next->next->next, name);
-  }
-}
-
-char *check_optTag(Node *optTag) {
-  // OptTag -> ID
-  //         | empty
-  assert(optTag != NULL);
-  if (optTag->child == NULL) return NULL;
-  return optTag->child->value.value.str_val;
-}
+// 全局结构体ID
+extern struct_t structID;
 
 void report_error(enum ErrorType type, int line, const char *msg) {
     printf("Error type %d at Line %d: %s\n", type, line, msg);
+}
+
+// 检查语义
+void check_semantic(Node *root) {
+    // Root is "Program"
+    // Program -> ExtDefList
+    assert(root != NULL && root->child != NULL);
+    Node *extDefList = root->child;
+
+    initSymbolTable();
+    check_extDefList(extDefList);
+
+    check_func_declared(symTable.globalFuncRoot);
+}
+
+void check_func_declared(RBNode funcRoot) {
+    // Check if all functions are defined
+    if (funcRoot == NULL) return;
+    check_func_declared(funcRoot->left);
+    if (funcRoot->symbol->type->u.function.defined != 1) {
+        report_error(UNDEFINED_FUNCTION_DECLARATION, funcRoot->symbol->type->u.function.declare_lineno, "Undefined function declaration");
+    }
+    check_func_declared(funcRoot->right);
+}
+
+void check_extDefList(Node *extDefList) {
+    // ExtDefList -> ExtDef ExtDefList
+    //             | empty
+    assert(extDefList != NULL);
+    if (extDefList->child == NULL) return;
+    Node *extDef = extDefList->child;
+    Node *nextExtDefList = extDef->next;
+    check_extDef(extDef);
+    check_extDefList(nextExtDefList);
+}
+
+void check_extDef(Node *extDef) {
+    // ExtDef -> Specifier ExtDecList SEMI
+    //         | Specifier SEMI
+    //         | Specifier FunDec CompSt
+    //         | Specifier FunDec SEMI
+    assert(extDef != NULL);
+
+    int childNum = get_child_num(extDef);
+    assert(childNum == 2 || childNum == 3);
+    Node *specifier = extDef->child;
+    Node *secondChild = specifier->next;
+    Type type = check_specifier(specifier);
+    if (type == NULL) {
+        // FIXME error recovery (check again)
+        // Error occurred
+        return;
+    }
+
+    if (secondChild->next == NULL) {
+        // Specifier SEMI
+        return;
+    }
+    assert(childNum == 3);
+    Node *thirdChild = secondChild->next;
+    if (strcmp(secondChild->name, "ExDecList") == 0) {
+        check_extDecList(secondChild, type);
+    } else if (strcmp(thirdChild->name, "CompSt") == 0) {
+        // Defining a function
+        check_funDec(secondChild, type, 1);
+        check_compSt(thirdChild, type);
+    } else {
+        // Function declaration
+        check_funDec(secondChild, type, 0);
+    }
+}
+
+void check_extDecList(Node *extDecList, Type type) {
+    // ExtDecList -> VarDec
+    //             | VarDec COMMA ExtDecList
+    assert(extDecList != NULL);
+    Node *varDec = extDecList->child;
+    check_varDec(varDec, type);
+    if (varDec->next != NULL) {
+        check_extDecList(varDec->next->next, type);
+    }
+}
+
+void check_varDec(Node *varDec, Type type) {
+    // VarDec -> ID
+    //         | VarDec LB INT RB
+    
+    assert(varDec != NULL);
+    Node *child = varDec->child;
+
+    if (child->next == NULL) {
+        // ID, insert into symbol table(maybe be array)
+        char *name = child->value.value.str_val;
+        if (search(name, false) != NULL) {
+            report_error(DUPLICATE_DEFINITION, child->line, "Duplicate definition");
+            return;
+        }
+        Symbol symbol = createSymbol(name, type);
+        insert(symbol, symTable.currentScope->root);
+    } else {
+        // VarDec LB INT RB
+        Node *sizeNode = child->next->next;
+        if (sizeNode->value.value.int_val <= 0) {
+            report_error(INVALID_LVALUE_ASSIGNMENT, sizeNode->line, "Array size must be positive");
+            return;
+        }
+
+        Type arrayType = (Type)malloc(sizeof(struct Type_));
+        arrayType->kind = ARRAY;
+        arrayType->u.array.elem = type;
+        arrayType->u.array.size = sizeNode->value.value.int_val;
+
+        check_varDec(child, arrayType);
+    }
+}
+
+Type check_specifier(Node *specifier) {
+    // Specifier -> TYPE
+    //            | StructSpecifier
+    assert(specifier != NULL);
+    Node *child = specifier->child;
+    if (strcmp(child->name, "TYPE") == 0) {
+        // Basic type
+        Type type = (Type)malloc(sizeof(struct Type_));
+        type->kind = BASIC;
+        if (strcmp(child->value.value.str_val, "int") == 0) {
+            type->u.basic = INT;
+        } else {
+            type->u.basic = FLOAT;
+        }
+        return type;
+    } else {
+        // StructSpecifier
+        // Return Basic or Structure type
+        return check_structSpecifier(child);
+    }
+}
+
+Type check_structSpecifier(Node *structSpecifier) {
+    // StructSpecifier -> STRUCT OptTag LC DefList RC
+    //                  | STRUCT Tag
+    assert(structSpecifier != NULL);
+    int childNum = get_child_num(structSpecifier);
+    assert(childNum == 2 || childNum == 5);
+    Node *child = structSpecifier->child;
+    if (childNum == 2) {
+        // STRUCT Tag
+        return check_tag(child->next);
+    } else {
+        // STRUCT OptTag LC DefList RC
+        char *name = check_optTag(child->next);
+        
+        // whether name is NULL or not, insert the structure into symbol table <nam, type> if there
+        // is not define it in SymbolTable yet for named structure
+        if (name != NULL) {
+            if (search(name, true) != NULL) {
+                report_error(DUPLICATE_DEFINITION, child->line, "Duplicate definition");
+                return NULL;
+            }
+        }
+        Type type = (Type)malloc(sizeof(struct Type_));
+        type->kind = STRUCTURE;
+        type->u.structure.ID = structID++;
+        // fill structure members by defList
+        check_defList(child->next->next->next, type->u.structure.struct_members);
+
+        // Now we can insert it.
+        Symbol symbol = createSymbol(name, type);
+        insert(symbol, symTable.globalStructRoot);
+        
+        return type;
+    }
+}
+
+Type check_tag(Node *tag) {
+    // Tag -> ID
+    assert(tag != NULL);
+    // 在符号表中查找是否有对应的结构体定义，如果没有则报错
+    // 返回对应结构体的 Type (Basic + StructID)
+    char *name = tag->child->value.value.str_val;
+    RBNode result = search(name, true);
+    Symbol symbol = result->symbol;
+    if (symbol == NULL) {
+        report_error(UNDEFINED_STRUCTURE_USAGE, tag->line, "Undefined structure usage");
+        return NULL;
+    }
+    Type type = (Type)malloc(sizeof(struct Type_));
+    type->kind = BASIC;
+    type->u.basic = symbol->type->u.structure.ID;
+    return type;
+}
+
+char *check_optTag(Node *optTag) {
+    // OptTag -> ID
+    //         | empty
+    assert(optTag != NULL);
+    if (optTag->child == NULL) return NULL;
+    return optTag->child->value.value.str_val;
+}
+
+void check_defList(Node *defList, FieldList fields) {
+    // DefList -> Def DefList
+    //          | empty
+    assert(defList != NULL);
+    if (defList->child == NULL) return NULL;
+
+    Node *def = defList->child;
+    Node *nextDefList = def->next;
+
+    check_def(def, fields);
+    check_defList(nextDefList, fields);
+}
+
+void check_def(Node *def, FieldList fields) {
+    // Def -> Specifier DecList SEMI
+    assert(def != NULL);
+    Node *specifier = def->child;
+    Node *decList = specifier->next;
+    check_decList(decList, check_specifier(specifier), fields);
+}
+
+void check_funDec(Node *funDec, Type type, int isDefine) {
+    // FunDec -> ID LP VarList RP
+    //         | ID LP RP
+    assert(funDec != NULL);
+    Node *child = funDec->child;
+    char *funcName = child->value.value.str_val;
+
+    RBNode res = search(funcName, true);
+    if (res != NULL) {
+        assert(res->symbol->type->kind == FUNCTION);
+        // Function already defined
+        if (res->symbol->type->u.function.defined) {
+            report_error(DUPLICATE_FUNCTION_DEFINITION, child->line, "Duplicate function definition");
+            return;
+        }
+        // Function can declare many times, but only define once
+        if (isDefine) {
+            res->symbol->type->u.function.defined = 1;
+        }
+    }
+    // Insert new function into symbol table
+    Type funcType = (Type)malloc(sizeof(struct Type_));
+    funcType->kind = FUNCTION;
+    funcType->u.function.ret = type;
+    funcType->u.function.defined = isDefine;
+    funcType->u.function.declare_lineno = child->line;
+    // Set function parameters and parameter number
+    FieldList params = NULL;
+    // TODO
+}
+
+void check_compSt(Node *compSt, Type funcType) {
+    // CompSt -> LC DefList StmtList RC
+    assert(compSt != NULL);
+    enterScope();
+
+    Node *defList = compSt->child->next;
+    Node *stmtList = defList->next;
+
+    check_defList(defList, NULL); // 解析局部变量定义
+    check_stmtList(stmtList, funcType); // 解析语句列表
+
+    exitScope();
+}
+
+void check_stmtList(Node *stmtList, Type funcType) {
+    // StmtList -> Stmt StmtList
+    //           | empty
+    assert(stmtList != NULL);
+    if (stmtList->child == NULL) return;
+
+    Node *stmt = stmtList->child;
+    check_stmt(stmt, funcType);
+    check_stmtList(stmt->next, funcType);
 }
