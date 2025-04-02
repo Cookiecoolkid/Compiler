@@ -16,5 +16,6 @@ int compareFieldsForSort(const void* a, const void* b);
 FieldList* fieldListToArray(FieldList fl, int len);
 
 void appendFieldList(FieldList* fl, FieldList newField);
+FieldList searchFieldList(FieldList fl, const char* name);
 
 #endif // __HELPER_H

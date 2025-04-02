@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+char* strdup(const char* s);
+
 // 全局符号表实例
 SymbolTable symTable;
 struct_t structID;
@@ -26,25 +28,19 @@ RBNode createRBNode(Symbol symbol) {
 }
 
 // 辅助函数：更新根节点
-void updateRoot(RBNode node, void* context) {
+void updateRoot(RBNode node) {
     if (node->parent == NULL) {
-        if (context == NULL) {
-            // 全局红黑树的根节点
-            if (node->symbol->type->kind == STRUCTURE) {
-                symTable.globalStructRoot = node;
-            } else if (node->symbol->type->kind == FUNCTION) {
-                symTable.globalFuncRoot = node;
-            }
-        } else {
-            // 局部作用域的根节点
-            ScopeRBNode* scope = (ScopeRBNode*)context;
-            scope->root = node;
+        // 全局红黑树的根节点
+        if (node->symbol->type->kind == STRUCTURE) {
+            symTable.globalStructRoot = node;
+        } else if (node->symbol->type->kind == FUNCTION) {
+            symTable.globalFuncRoot = node;
         }
     }
 }
 
 // 左旋操作
-void leftRotate(RBNode node, void* context) {
+void leftRotate(RBNode node) {
     RBNode rightChild = node->right;
     node->right = rightChild->left;
     if (rightChild->left != NULL) {
@@ -52,7 +48,7 @@ void leftRotate(RBNode node, void* context) {
     }
     rightChild->parent = node->parent;
     if (node->parent == NULL) {
-        updateRoot(rightChild, context);
+        updateRoot(rightChild);
     } else if (node == node->parent->left) {
         node->parent->left = rightChild;
     } else {
@@ -63,7 +59,7 @@ void leftRotate(RBNode node, void* context) {
 }
 
 // 右旋操作
-void rightRotate(RBNode node, void* context) {
+void rightRotate(RBNode node) {
     RBNode leftChild = node->left;
     node->left = leftChild->right;
     if (leftChild->right != NULL) {
@@ -71,7 +67,7 @@ void rightRotate(RBNode node, void* context) {
     }
     leftChild->parent = node->parent;
     if (node->parent == NULL) {
-        updateRoot(leftChild, context);
+        updateRoot(leftChild);
     } else if (node == node->parent->right) {
         node->parent->right = leftChild;
     } else {
@@ -82,22 +78,15 @@ void rightRotate(RBNode node, void* context) {
 }
 
 // 修复红黑树的性质
-void fixViolation(RBNode node, void* context) {
+void fixViolation(RBNode node) {
     RBNode parent = NULL;
     RBNode grandparent = NULL;
-    ScopeRBNode* scope = NULL;
 
     // 如果是全局红黑树，context为SymbolTable指针
     if (node->parent == NULL) {
         // 根节点必须是黑色
         node->color = BLACK;
         return;
-    }
-
-    if (node->symbol->type->kind == STRUCTURE || node->symbol->type->kind == FUNCTION) {
-        scope = NULL; // 全局红黑树没有scope
-    } else {
-        scope = (ScopeRBNode*)context;
     }
 
     while ((node != NULL) && (node->color == RED) && (node->parent->color == RED)) {
@@ -117,13 +106,13 @@ void fixViolation(RBNode node, void* context) {
             } else {
                 // 情况2：叔叔是黑色，当前节点是右孩子
                 if (node == parent->right) {
-                    leftRotate(parent, scope);
+                    leftRotate(parent);
                     node = parent;
                     parent = node->parent;
                 }
 
                 // 情况3：叔叔是黑色，当前节点是左孩子
-                rightRotate(grandparent, scope);
+                rightRotate(grandparent);
                 parent->color = BLACK;
                 grandparent->color = RED;
                 node = parent;
@@ -141,13 +130,13 @@ void fixViolation(RBNode node, void* context) {
             } else {
                 // 情况2：叔叔是黑色，当前节点是左孩子
                 if (node == parent->left) {
-                    rightRotate(parent, scope);
+                    rightRotate(parent);
                     node = parent;
                     parent = node->parent;
                 }
 
                 // 情况3：叔叔是黑色，当前节点是右孩子
-                leftRotate(grandparent, scope);
+                leftRotate(grandparent);
                 parent->color = BLACK;
                 grandparent->color = RED;
                 node = parent;
@@ -156,18 +145,16 @@ void fixViolation(RBNode node, void* context) {
     }
 
     // 确保根节点是黑色
-    if (scope != NULL) {
-        scope->root->color = BLACK;
-    } else {
-        // 全局红黑树的根节点
-        if (node->parent == NULL) {
-            node->color = BLACK;
-        }
+    if (symTable.globalStructRoot != NULL && symTable.globalStructRoot->parent == NULL) {
+        symTable.globalStructRoot->color = BLACK;
+    }
+    if (symTable.globalFuncRoot != NULL && symTable.globalFuncRoot->parent == NULL) {
+        symTable.globalFuncRoot->color = BLACK;
     }
 }
 
 // 插入节点到红黑树
-void insert(Symbol symbol, void* context) {
+void insert(Symbol symbol) {
     RBNode newRBNode = createRBNode(symbol);
     RBNode current = NULL;
     RBNode parent = NULL;
@@ -185,7 +172,7 @@ void insert(Symbol symbol, void* context) {
         }
     } else {
         // 普通变量插入到当前作用域
-        scope = (ScopeRBNode*)context;
+        scope = symTable.currentScope;
         current = scope->root;
     }
 
@@ -216,11 +203,7 @@ void insert(Symbol symbol, void* context) {
     }
 
     // 修复红黑树性质
-    if (symbol->type->kind == STRUCTURE || symbol->type->kind == FUNCTION) {
-        fixViolation(newRBNode, NULL);
-    } else {
-        fixViolation(newRBNode, scope);
-    }
+    fixViolation(newRBNode);
 }
 
 // 查找符号（支持嵌套作用域）
@@ -229,7 +212,7 @@ RBNode search(char* name, bool isDef) {
       ScopeRBNode* current = symTable.currentScope;
       while (current != NULL) {
           RBNode currentTree = current->root;
-          while (currentTree != NULL) {
+          while (currentTree != NULL && currentTree->symbol != NULL) {
               int cmp = strcmp(name, currentTree->symbol->name);
               if (cmp == 0) {
                   return currentTree;
@@ -297,6 +280,7 @@ void initSymbolTable() {
 // 进入新作用域
 void enterScope() {
     ScopeRBNode* newScope = createScope();
+    newScope->root = NULL;
     newScope->next = symTable.currentScope;
     symTable.currentScope = newScope;
 }
@@ -309,7 +293,6 @@ void exitScope() {
         free(oldScope);
     }
 }
-
 
 /* ====================== Create Symbol and Type ====================== */
 // 辅助函数：创建符号
@@ -336,6 +319,15 @@ Type createBasicType(int basicType) {
     return newType;
 }
 
+// 辅助函数：创建数组类型
+Type createArrayType(Type elemType, int size) {
+    Type newType = (Type)malloc(sizeof(struct Type_));
+    newType->kind = ARRAY;
+    newType->u.array.elem = elemType;
+    newType->u.array.size = size;
+    return newType;
+}
+
 // 辅助函数：创建结构体类型
 Type createStructType(FieldList fields) {
     Type newType = (Type)malloc(sizeof(struct Type_));
@@ -352,7 +344,7 @@ Type createFunctionType(FieldList params, Type retType, int paramNum) {
     newType->u.function.ret = retType;
     newType->u.function.paramNum = paramNum;
     newType->u.function.defined = 0;
-    newType->u.function.declared = 0;
+    newType->u.function.declare_lineno = 0;
     return newType;
 }
 
@@ -366,4 +358,15 @@ void appendFieldList(FieldList* fl, FieldList newField) {
         }
         current->tail = newField;
     }
+}
+
+FieldList searchFieldList(FieldList fl, const char* name) {
+    FieldList current = fl;
+    while (current != NULL) {
+        if (strcmp(current->name, name) == 0) {
+            return current;
+        }
+        current = current->tail;
+    }
+    return NULL;
 }

@@ -19,7 +19,7 @@ enum Color { RED, BLACK };
 enum Kind { BASIC, ARRAY, STRUCTURE, FUNCTION };
 
 // 定义基本类型枚举
-enum BasicType { INT, FLOAT };
+enum BasicType { INT_, FLOAT_ };
 
 // // 定义全局结构体ID
 #define BASIC_TYPE_NUM 2
@@ -77,10 +77,10 @@ typedef struct {
 // 函数声明
 ScopeRBNode* createScope();
 RBNode createRBNode(Symbol symbol);
-void updateRoot(RBNode node, void* context);
-void leftRotate(RBNode node, void* context);
-void rightRotate(RBNode node, void* context);
-void fixViolation(RBNode node, void* context);
+void updateRoot(RBNode node);
+void leftRotate(RBNode node);
+void rightRotate(RBNode node);
+void fixViolation(RBNode node);
 void printTree(RBNode node);
 void printScopeChain();
 void initSymbolTable();
@@ -88,12 +88,13 @@ void enterScope();
 void exitScope();
 
 /* ================ Public API ================ */
-void insert(Symbol symbol, void* context);
+void insert(Symbol symbol);
 RBNode search(char* name, bool isDef);
 
 Symbol createSymbol(const char* name, Type type);
 Type createBasicType(int basicType);
 Type createArrayType(Type elem, int size);
 Type createStructType(FieldList struct_members);
+
 
 #endif // _RB_TREE_H

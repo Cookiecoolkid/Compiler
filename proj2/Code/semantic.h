@@ -6,7 +6,7 @@
 
 // 错误类型枚举
 enum ErrorType {
-    UNDEFINED_VARIABLE,          // 错误类型 1：变量在使用时未经定义
+    UNDEFINED_VARIABLE = 1,          // 错误类型 1：变量在使用时未经定义
     UNDEFINED_FUNCTION_CALL,     // 错误类型 2：函数在调用时未经定义
     DUPLICATE_DEFINITION,        // 错误类型 3：变量出现重复定义，或变量与前面定义过的结构体名字重复
     DUPLICATE_FUNCTION_DEFINITION, // 错误类型 4：函数出现重复定义
@@ -28,6 +28,9 @@ enum ErrorType {
 };
 
 // 函数声明
+void check_func_declared(RBNode funcRoot);
+void report_error(enum ErrorType type, int line, const char *msg);
+
 void check_semantic(Node *root);
 void check_extDefList(Node *extDefList);
 void check_extDef(Node *extDef);
@@ -39,7 +42,18 @@ char *check_optTag(Node *optTag);
 void check_defList(Node *defList, FieldList fields);
 void check_funDec(Node *funDec, Type type, int isDefine);
 void check_compSt(Node *compSt, Type type);
+void check_decList(Node *decList, Type type, FieldList fields);
+void check_dec(Node *dec, Type type, FieldList fields);
+FieldList check_varDec(Node *varDec, Type type, int isParam);
+Type check_exp(Node *exp);
+void check_args(Node *args, FieldList params);
+void check_stmt(Node *stmt, Type type);
+void check_stmtList(Node *stmtList, Type type);
+void check_def(Node *def, FieldList fields);
+FieldList check_paramDec(Node *paramDec);
+void check_varList(Node *varList, FieldList *params, int *paramNum);
 
-void report_error(enum ErrorType type, int line, const char *msg);
+
+
 
 #endif // _SEMANTIC_H

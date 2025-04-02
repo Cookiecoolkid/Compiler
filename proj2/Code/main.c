@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "syntax.tab.h"
+#include "semantic.h"
 extern int yylex();
 // extern int lines, words, chars;
 extern FILE *yyin;
