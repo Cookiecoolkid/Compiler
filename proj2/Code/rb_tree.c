@@ -165,10 +165,8 @@ void insert(Symbol symbol) {
         // 结构体或函数插入到全局红黑树
         if (symbol->type->kind == STRUCTURE) {
             current = symTable.globalStructRoot;
-            symTable.globalStructRoot = newRBNode;
         } else {
             current = symTable.globalFuncRoot;
-            symTable.globalFuncRoot = newRBNode;
         }
     } else {
         // 普通变量插入到当前作用域
@@ -209,38 +207,47 @@ void insert(Symbol symbol) {
 // 查找符号（支持嵌套作用域）
 RBNode search(char* name, bool isDef) {
     if (!isDef) {
-      ScopeRBNode* current = symTable.currentScope;
-      while (current != NULL) {
-          RBNode currentTree = current->root;
-          while (currentTree != NULL && currentTree->symbol != NULL) {
-              int cmp = strcmp(name, currentTree->symbol->name);
-              if (cmp == 0) {
-                  return currentTree;
-              } else if (cmp < 0) {
-                  currentTree = currentTree->left;
-              } else {
-                  currentTree = currentTree->right;
-              }
-          }
-          current = current->next; // 未找到，递归查找外层作用域
-      }
-      return NULL;
+        // 查找局部作用域
+        ScopeRBNode* current = symTable.currentScope;
+        while (current != NULL) {
+            RBNode currentTree = current->root;
+            RBNode result = searchRBTree(currentTree, name);
+            if (result != NULL) {
+                return result;
+            }
+            current = current->next; // 未找到，递归查找外层作用域
+        }
+        return NULL;
     }
-    // 检查全局结构体和函数定义
-    // FIXME: should I add arg to differentiate struct and func?(when funcName == structName)
+    // FIXME：检查 结构体和函数是否允许重名（C语言似乎可以）
+    // 检查全局结构体定义
     RBNode structRBNode = symTable.globalStructRoot;
-    while (structRBNode != NULL) {
-        if (strcmp(name, structRBNode->symbol->name) == 0) {
-            return structRBNode;
-        }
-        structRBNode = structRBNode->right;
+    RBNode result = searchRBTree(structRBNode, name);
+    if (result != NULL) {
+        return result;
     }
+
+    // 检查全局函数定义
     RBNode funcRBNode = symTable.globalFuncRoot;
-    while (funcRBNode != NULL) {
-        if (strcmp(name, funcRBNode->symbol->name) == 0) {
-            return funcRBNode;
+    result = searchRBTree(funcRBNode, name);
+    if (result != NULL) {
+        return result;
+    }
+
+    return NULL; // 未找到
+}
+
+// 辅助函数：在红黑树中查找符号
+RBNode searchRBTree(RBNode root, char* name) {
+    while (root != NULL) {
+        int cmp = strcmp(name, root->symbol->name);
+        if (cmp == 0) {
+            return root; // 找到匹配的符号
+        } else if (cmp < 0) {
+            root = root->left; // 向左子树查找
+        } else {
+            root = root->right; // 向右子树查找
         }
-        funcRBNode = funcRBNode->right;
     }
     return NULL; // 未找到
 }
@@ -275,6 +282,8 @@ void initSymbolTable() {
     symTable.currentScope = createScope();
     symTable.globalStructRoot = NULL;
     symTable.globalFuncRoot = NULL;
+
+    structID = BASIC_TYPE_NUM; // 从 2 开始, 0 和 1 分别表示 INT 和 FLOAT
 }
 
 // 进入新作用域

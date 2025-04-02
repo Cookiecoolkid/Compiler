@@ -20,7 +20,7 @@ enum ErrorType {
     NON_INTEGER_ARRAY_INDEX,     // 错误类型 12：数组访问操作符“ [...] ”中出现非整数
     STRUCTURE_FIELD_ON_NON_STRUCTURE, // 错误类型 13：对非结构体型变量使用“.”操作符
     UNDEFINED_STRUCTURE_FIELD,   // 错误类型 14：访问结构体中未定义过的域
-    DUPLICATE_STRUCTURE_FIELD,   // 错误类型 15：结构体中域名重复定义
+    DUPLICATE_STRUCTURE_FIELD,   // 错误类型 15：结构体中域名重复定义或者在结构体中使用等号初始化
     NAME_CONFLICT_STRUCTURE_VARIABLE, // 错误类型 16：结构体的名字与前面定义过的结构体或变量的名字重复
     UNDEFINED_STRUCTURE_USAGE,   // 错误类型 17：直接使用未定义过的结构体来定义变量
     UNDEFINED_FUNCTION_DECLARATION, // 错误类型 18：函数进行了声明，但没有被定义
@@ -40,7 +40,7 @@ Type check_structSpecifier(Node *structSpecifier);
 Type check_tag(Node *tag);
 char *check_optTag(Node *optTag);
 void check_defList(Node *defList, FieldList fields);
-void check_funDec(Node *funDec, Type type, int isDefine);
+Type check_funDec(Node *funDec, Type type, int isDefine);
 void check_compSt(Node *compSt, Type type);
 void check_decList(Node *decList, Type type, FieldList fields);
 void check_dec(Node *dec, Type type, FieldList fields);

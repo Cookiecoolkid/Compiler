@@ -83,8 +83,8 @@ void check_extDef(Node *extDef) {
         check_extDecList(secondChild, type);
     } else if (strcmp(thirdChild->name, "CompSt") == 0) {
         // Defining a function
-        check_funDec(secondChild, type, 1);
-        check_compSt(thirdChild, type);
+        Type funcType = check_funDec(secondChild, type, 1);
+        check_compSt(thirdChild, funcType);
     } else {
         // Function declaration
         check_funDec(secondChild, type, 0);
@@ -112,7 +112,8 @@ FieldList check_varDec(Node *varDec, Type type, int isParam) {
         // ID
         char *name = child->value.value.str_val;
         if (!isParam) {
-            if (search(name, false) != NULL) {
+            RBNode try_struct = search(name, true);
+            if (search(name, false) != NULL || (try_struct != NULL && try_struct->symbol->type->kind == STRUCTURE)) {
                 snprintf(msg, MSG_SIZE, "Duplicate definition %s", name);
                 report_error(DUPLICATE_DEFINITION, child->line, msg);
                 return NULL;
@@ -281,8 +282,8 @@ void check_dec(Node *dec, Type type, FieldList fields) {
         // Insert field into fields 
         FieldList res = searchFieldList(fields, field->name);
         if (res != NULL) {
-            snprintf(msg, MSG_SIZE, "Duplicate definition %s", field->name);
-            report_error(DUPLICATE_DEFINITION, varDec->line, msg);
+            snprintf(msg, MSG_SIZE, "Duplicate struct member definition %s", field->name);
+            report_error(DUPLICATE_STRUCTURE_FIELD, varDec->line, msg);
             return;
         }
         appendFieldList(&fields, field);
@@ -299,7 +300,7 @@ void check_dec(Node *dec, Type type, FieldList fields) {
     }
 }
 
-void check_funDec(Node *funDec, Type type, int isDefine) {
+Type check_funDec(Node *funDec, Type type, int isDefine) {
     // FunDec -> ID LP VarList RP
     //         | ID LP RP
     assert(funDec != NULL);
@@ -314,7 +315,7 @@ void check_funDec(Node *funDec, Type type, int isDefine) {
         if (res->symbol->type->u.function.defined) {
             snprintf(msg, MSG_SIZE, "Duplicate definition %s", funcName);
             report_error(DUPLICATE_FUNCTION_DEFINITION, child->line, msg);
-            return;
+            return NULL;
         }
         // Function can declare many times, but only define once
         if (isDefine) {
@@ -338,6 +339,8 @@ void check_funDec(Node *funDec, Type type, int isDefine) {
 
     Symbol symbol = createSymbol(funcName, funcType);
     insert(symbol);
+
+    return funcType;
 }
 
 void check_varList(Node *varList, FieldList *params, int *paramNum) {
@@ -369,6 +372,16 @@ void check_compSt(Node *compSt, Type funcType) {
     // CompSt -> LC DefList StmtList RC
     assert(compSt != NULL);
     enterScope();
+
+    if (funcType != NULL && funcType->kind == FUNCTION) {
+        // Insert parameters into symbol table
+        FieldList params = funcType->u.function.params;
+        while (params != NULL) {
+            Symbol symbol = createSymbol(params->name, params->type);
+            insert(symbol);
+            params = params->tail;
+        }
+    }
 
     Node *defList = compSt->child->next;
     Node *stmtList = defList->next;
@@ -414,7 +427,7 @@ void check_stmt(Node *stmt, Type funcType) {
         // RETURN Exp SEMI
         Node *exp = child->next;
         Type returnType = check_exp(exp);
-        if (funcType->u.function.ret && returnType && compareTypes(funcType->u.function.ret, returnType)) {
+        if (funcType && funcType->u.function.ret && returnType && compareTypes(funcType->u.function.ret, returnType)) {
             snprintf(msg, MSG_SIZE, "Return type mismatch");
             report_error(RETURN_TYPE_MISMATCH, exp->line, msg);
         }
@@ -499,6 +512,15 @@ Type check_exp(Node *exp) {
         Node *right = second_child->next;
         Type leftType = check_exp(left);
         Type rightType = check_exp(right);
+        assert(left->child != NULL);
+        if (!(left->child && strcmp(left->child->name, "ID") == 0 ||
+            (left->child->next && strcmp(left->child->next->name, "DOT") == 0) ||
+            (left->child->next && strcmp(left->child->next->name, "LB") == 0))) {
+            snprintf(msg, MSG_SIZE, "Invalid lvalue assignment");
+            report_error(INVALID_LVALUE_ASSIGNMENT, exp->line, msg);
+        }
+
+
         if (leftType && rightType && compareTypes(leftType, rightType)) {
             snprintf(msg, MSG_SIZE, "Type mismatch in assignment");
             report_error(TYPE_MISMATCH_ASSIGNMENT, exp->line, msg);
@@ -546,15 +568,26 @@ Type check_exp(Node *exp) {
         // ID LP RP
         char *name = child->value.value.str_val;
         RBNode result = search(name, true);
-        if (result == NULL) {
+        RBNode try_bacis = search(name, false);
+        if (result == NULL && try_bacis != NULL) {
+            snprintf(msg, MSG_SIZE, "Function call on non-function %s", name);
+            report_error(FUNCTION_CALL_ON_NON_FUNCTION, exp->line, msg);
+            return NULL;            
+        } else if (result == NULL) {
             snprintf(msg, MSG_SIZE, "Undefined function call %s", name);
             report_error(UNDEFINED_FUNCTION_CALL, exp->line, msg);
             return NULL;
         }
+
         if (result->symbol->type->kind != FUNCTION) {
             snprintf(msg, MSG_SIZE, "Function call on non-function %s", name);
             report_error(FUNCTION_CALL_ON_NON_FUNCTION, exp->line, msg);
             return NULL;
+        } else {
+            if (result->symbol->type->u.function.paramNum != 0) {
+                snprintf(msg, MSG_SIZE, "Function call with wrong number of arguments");
+                report_error(FUNCTION_ARGUMENT_MISMATCH, exp->line, msg);
+            }
         }
         return result->symbol->type->u.function.ret;
     } else if (strcmp(second_child->name, "DOT") == 0) {
@@ -562,7 +595,7 @@ Type check_exp(Node *exp) {
         Node *left = child;
         Node *right = second_child->next;
         Type leftType = check_exp(left);
-        if (leftType->kind != STRUCTURE) {
+        if (leftType->kind != BASIC || leftType->u.basic <= FLOAT_) {
             snprintf(msg, MSG_SIZE, "Structure field on non-structure");
             report_error(STRUCTURE_FIELD_ON_NON_STRUCTURE, exp->line, msg);
             return NULL;
@@ -600,11 +633,17 @@ Type check_exp(Node *exp) {
         // ID LP Args RP
         char *name = child->value.value.str_val;
         RBNode result = search(name, true);
-        if (result == NULL) {
+        RBNode try_bacis = search(name, false);
+        if (result == NULL && try_bacis != NULL) {
+            snprintf(msg, MSG_SIZE, "Function call on non-function %s", name);
+            report_error(FUNCTION_CALL_ON_NON_FUNCTION, exp->line, msg);
+            return NULL;
+        } else if (result == NULL) {
             snprintf(msg, MSG_SIZE, "Undefined function call %s", name);
             report_error(UNDEFINED_FUNCTION_CALL, exp->line, msg);
             return NULL;
         }
+
         if (result->symbol->type->kind != FUNCTION) {
             snprintf(msg, MSG_SIZE, "Function call on non-function %s", name);
             report_error(FUNCTION_CALL_ON_NON_FUNCTION, exp->line, msg);
@@ -637,22 +676,26 @@ Type check_exp(Node *exp) {
 
 
 void check_args(Node *args, FieldList params) {
+    // Args -> Exp COMMA Args
+    //       | Exp
+
     if (args == NULL && params == NULL) {
         return;
     }
+
     if (args == NULL || params == NULL) {
-        snprintf(msg, MSG_SIZE, "Function argument mismatch");
+        snprintf(msg, MSG_SIZE, "Function argument number mismatch");
         report_error(FUNCTION_ARGUMENT_MISMATCH, args->line, msg);
         return;
     }
-
-    Type argType = check_exp(args);
+    Node *child = args->child;
+    Type argType = check_exp(child);
     if (argType->kind != params->type->kind) {
         snprintf(msg, MSG_SIZE, "Argument type mismatch");
         report_error(FUNCTION_ARGUMENT_MISMATCH, args->line, msg);
     }
 
-    if (args->next != NULL) {
-        check_args(args->next->next, params->tail);
+    if (child->next != NULL) {
+        check_args(child->next->next, params->tail);
     }
 }
