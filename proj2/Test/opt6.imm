@@ -9,7 +9,6 @@ struct Temp2
   int x;
 };
 
-
 int main()
 {
   struct Temp1 t1;
