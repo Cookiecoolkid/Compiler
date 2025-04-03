@@ -189,17 +189,19 @@ Type check_structSpecifier(Node *structSpecifier) {
         // whether name is NULL or not, insert the structure into symbol table <nam, type> if there
         // is not define it in SymbolTable yet for named structure
         if (name != NULL) {
-            if (search(name, true) != NULL) {
-                snprintf(msg, MSG_SIZE, "Duplicate definition %s", name);
-                report_error(DUPLICATE_DEFINITION, child->line, msg);
+            if (search(name, true) != NULL || search(name, false) != NULL) {
+                snprintf(msg, MSG_SIZE, "Duplicate definition for struct %s", name);
+                report_error(NAME_CONFLICT_STRUCTURE_VARIABLE, child->line, msg);
                 return NULL;
             }
         }
         Type type = (Type)malloc(sizeof(struct Type_));
         type->kind = STRUCTURE;
         type->u.structure.ID = structID++;
+        type->u.structure.struct_members = (FieldList)malloc(sizeof(struct FieldList_));
+        type->u.structure.struct_members->name = NULL;
         // fill structure members by defList
-        check_defList(child->next->next->next, type->u.structure.struct_members);
+        check_defList(child->next->next->next, type->u.structure.struct_members, 1);
 
         // Now we can insert it.
         Symbol symbol = createSymbol(name, type);
@@ -216,12 +218,12 @@ Type check_tag(Node *tag) {
     // 返回对应结构体的 Type (Basic + StructID)
     char *name = tag->child->value.value.str_val;
     RBNode result = search(name, true);
-    Symbol symbol = result->symbol;
-    if (symbol == NULL) {
+    if (result == NULL) {
         snprintf(msg, MSG_SIZE, "Undefined structure usage %s", name);
         report_error(UNDEFINED_STRUCTURE_USAGE, tag->line, msg);
         return NULL;
     }
+    Symbol symbol = result->symbol;
     Type type = (Type)malloc(sizeof(struct Type_));
     type->kind = BASIC;
     type->u.basic = symbol->type->u.structure.ID;
@@ -236,7 +238,7 @@ char *check_optTag(Node *optTag) {
     return optTag->child->value.value.str_val;
 }
 
-void check_defList(Node *defList, FieldList fields) {
+void check_defList(Node *defList, FieldList fields, int isStruct) {
     // DefList -> Def DefList
     //          | empty
     assert(defList != NULL);
@@ -245,57 +247,76 @@ void check_defList(Node *defList, FieldList fields) {
     Node *def = defList->child;
     Node *nextDefList = def->next;
 
-    check_def(def, fields);
-    check_defList(nextDefList, fields);
+    check_def(def, fields, isStruct);
+    check_defList(nextDefList, fields, isStruct);
 }
 
-void check_def(Node *def, FieldList fields) {
+void check_def(Node *def, FieldList fields, int isStruct) {
     // Def -> Specifier DecList SEMI
     assert(def != NULL);
     Node *specifier = def->child;
     Node *decList = specifier->next;
-    check_decList(decList, check_specifier(specifier), fields);
+    Type type = check_specifier(specifier);
+    if (type != NULL) {
+        check_decList(decList, type, fields, isStruct);
+    }
 }
 
-void check_decList(Node *decList, Type type, FieldList fields) {
+void check_decList(Node *decList, Type type, FieldList fields, int isStruct) {
     // DecList -> Dec
     //          | Dec COMMA DecList
     assert(decList != NULL);
     Node *dec = decList->child;
-    check_dec(dec, type, fields);
+    check_dec(dec, type, fields, isStruct);
     if (dec->next != NULL) {
-        check_decList(dec->next->next, type, fields);
+        check_decList(dec->next->next, type, fields, isStruct);
     }
 }
 
-void check_dec(Node *dec, Type type, FieldList fields) {
+void check_dec(Node *dec, Type type, FieldList fields, int isStruct) {
     // Dec -> VarDec
     //      | VarDec ASSIGNOP Exp
     assert(dec != NULL);
     Node *varDec = dec->child;
-    FieldList field = check_varDec(varDec, type, 0);
-    if (field == NULL) {
-        // FIXME error recovery (check again)
-        return;
-    }
-    if (fields != NULL) {
-        // Insert field into fields 
-        FieldList res = searchFieldList(fields, field->name);
-        if (res != NULL) {
-            snprintf(msg, MSG_SIZE, "Duplicate struct member definition %s", field->name);
-            report_error(DUPLICATE_STRUCTURE_FIELD, varDec->line, msg);
-            return;
-        }
-        appendFieldList(&fields, field);
-    }
 
-    if (varDec->next != NULL) {
-        // VarDec ASSIGNOP Exp
-        Node *exp = varDec->next->next;
-        Type expType = check_exp(exp);
-        if (type && expType && compareTypes(type, expType)) {
-            snprintf(msg, MSG_SIZE, "Type mismatched for assignment");
-            report_error(TYPE_MISMATCH_ASSIGNMENT, exp->line, msg);
+    if (isStruct) {
+        if (varDec->next == NULL) {
+            // VarDec
+            FieldList field = check_varDec(varDec, type, 1);
+            if (field == NULL) {
+                // FIXME error recovery (check again)
+                return;
+            }
+            // if field->name == NULL, it means this is the first member of the struct
+            if (fields->name == NULL) {
+                fields->name = field->name;
+                fields->type = field->type;
+                fields->tail = NULL;
+            } else {
+                FieldList res = searchFieldList(fields, field->name);
+                if (res != NULL) {
+                    snprintf(msg, MSG_SIZE, "Duplicate struct member definition %s", field->name);
+                    report_error(DUPLICATE_STRUCTURE_FIELD, varDec->line, msg);
+                    return;
+                }
+                appendFieldList(&fields, field);                
+            }
+        } else {
+            // VarDec ASSIGNOP Exp
+            snprintf(msg, MSG_SIZE, "Initialization in struct define");
+            report_error(DUPLICATE_STRUCTURE_FIELD, varDec->line, msg);
+        }
+    } else {
+        // Not a struct, just check VarDec
+        check_varDec(varDec, type, 0);
+        if (varDec->next != NULL) {
+            // VarDec ASSIGNOP Exp
+            Node *exp = varDec->next->next;
+            Type expType = check_exp(exp);
+            if (type && expType && compareTypes(type, expType)) {
+                snprintf(msg, MSG_SIZE, "Type mismatched for assignment");
+                report_error(TYPE_MISMATCH_ASSIGNMENT, exp->line, msg);
+            }
         }
     }
 }
@@ -316,7 +337,7 @@ Type check_funDec(Node *funDec, Type type, int isDefine) {
             snprintf(msg, MSG_SIZE, "Duplicate definition %s", funcName);
             report_error(DUPLICATE_FUNCTION_DEFINITION, child->line, msg);
             return NULL;
-        }
+        } 
         // Function can declare many times, but only define once
         if (isDefine) {
             res->symbol->type->u.function.defined = 1;
@@ -336,6 +357,19 @@ Type check_funDec(Node *funDec, Type type, int isDefine) {
         Node *varList = child->next->next;
         check_varList(varList, &(funcType->u.function.params), &(funcType->u.function.paramNum));
     }
+
+    // Multi-declaration is allowed
+    if (res != NULL && res->symbol->type->u.function.declare_lineno != 0) {
+        // Check if the function signature matches
+        FieldList params = funcType->u.function.params;
+        FieldList oldParams = res->symbol->type->u.function.params;
+        if (!compareFieldListsUnordered(params, oldParams)) {
+            snprintf(msg, MSG_SIZE, "Function signature mismatch %s", funcName);
+            report_error(CONFLICTING_FUNCTION_DECLARATION, child->line, msg);
+            return NULL;
+        }
+        return funcType;
+    } 
 
     Symbol symbol = createSymbol(funcName, funcType);
     insert(symbol);
@@ -386,7 +420,7 @@ void check_compSt(Node *compSt, Type funcType) {
     Node *defList = compSt->child->next;
     Node *stmtList = defList->next;
 
-    check_defList(defList, NULL); // 解析局部变量定义
+    check_defList(defList, NULL, 0); // 解析局部变量定义
     check_stmtList(stmtList, funcType); // 解析语句列表
 
     exitScope();
@@ -600,8 +634,16 @@ Type check_exp(Node *exp) {
             report_error(STRUCTURE_FIELD_ON_NON_STRUCTURE, exp->line, msg);
             return NULL;
         }
+        char structName[256];
+        snprintf(structName, sizeof(structName), "%d", leftType->u.basic);
+        Type structType = search(structName, true)->symbol->type;
+        if (structType == NULL) {
+            snprintf(msg, MSG_SIZE, "Undefined structure usage");
+            report_error(UNDEFINED_STRUCTURE_USAGE, exp->line, msg);
+            return NULL;
+        }
         char *fieldName = right->value.value.str_val;
-        FieldList field = leftType->u.structure.struct_members;
+        FieldList field = structType->u.structure.struct_members;
         while (field != NULL) {
             if (strcmp(field->name, fieldName) == 0) {
                 return field->type;
