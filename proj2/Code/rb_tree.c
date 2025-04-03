@@ -83,19 +83,17 @@ void fixViolation(RBNode node) {
     RBNode grandparent = NULL;
 
     // 如果是全局红黑树，context为SymbolTable指针
-    if (node->parent == NULL) {
-        // 根节点必须是黑色
-        node->color = BLACK;
-        return;
-    }
-
-    while ((node != NULL) && (node->color == RED) && (node->parent->color == RED)) {
+    while (node != NULL && node->color == RED && node->parent != NULL && node->parent->color == RED) {
         parent = node->parent;
-        grandparent = node->parent->parent;
+        grandparent = parent->parent;
+
+        if (grandparent == NULL) {
+            break; // 到达根节点
+        }
 
         // 父节点是祖父节点的左孩子
         if (parent == grandparent->left) {
-            RBNode uncle = grandparent->right;
+            RBNode uncle = (grandparent->right != NULL) ? grandparent->right : NULL;
 
             // 情况1：叔叔是红色
             if (uncle != NULL && uncle->color == RED) {
@@ -109,6 +107,7 @@ void fixViolation(RBNode node) {
                     leftRotate(parent);
                     node = parent;
                     parent = node->parent;
+                    grandparent = parent->parent;
                 }
 
                 // 情况3：叔叔是黑色，当前节点是左孩子
@@ -119,7 +118,7 @@ void fixViolation(RBNode node) {
             }
         } else {
             // 父节点是祖父节点的右孩子
-            RBNode uncle = grandparent->left;
+            RBNode uncle = (grandparent->left != NULL) ? grandparent->left : NULL;
 
             // 情况1：叔叔是红色
             if (uncle != NULL && uncle->color == RED) {
@@ -133,6 +132,7 @@ void fixViolation(RBNode node) {
                     rightRotate(parent);
                     node = parent;
                     parent = node->parent;
+                    grandparent = parent->parent;
                 }
 
                 // 情况3：叔叔是黑色，当前节点是右孩子
@@ -226,6 +226,14 @@ RBNode search(char* name, bool isDef) {
     if (result != NULL) {
         return result;
     }
+    // 结构体也可以使用 StructID 查询（若 name 找不到）
+    struct_t structID = (struct_t)atoi(name);
+    if (structID >= BASIC_TYPE_NUM) {
+        result = searchByStructID(structRBNode, structID);
+        if (result != NULL) {
+            return result;
+        }
+    }
 
     // 检查全局函数定义
     RBNode funcRBNode = symTable.globalFuncRoot;
@@ -235,6 +243,30 @@ RBNode search(char* name, bool isDef) {
     }
 
     return NULL; // 未找到
+}
+
+RBNode searchByStructID (RBNode node, struct_t structID) {
+    // 遍历所有全局结构体定义
+    if (node == NULL) {
+        return NULL;
+    }
+    if (node->left != NULL) {
+        RBNode leftResult = searchByStructID(node->left, structID);
+        if (leftResult != NULL) {
+            return leftResult;
+        }
+    }
+    if (node->symbol->type->kind == STRUCTURE && node->symbol->type->u.structure.ID == structID) {
+        return node; // 找到匹配的结构体
+    }
+    if (node->right != NULL) {
+        RBNode rightResult = searchByStructID(node->right, structID);
+        if (rightResult != NULL) {
+            return rightResult;
+        }
+    }
+
+    return NULL;
 }
 
 // 辅助函数：在红黑树中查找符号

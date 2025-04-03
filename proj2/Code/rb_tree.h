@@ -91,6 +91,7 @@ void exitScope();
 void insert(Symbol symbol);
 RBNode search(char* name, bool isDef);
 RBNode searchRBTree(RBNode root, char* name);
+RBNode searchByStructID(RBNode node, struct_t structID);
 
 Symbol createSymbol(const char* name, Type type);
 Type createBasicType(int basicType);
