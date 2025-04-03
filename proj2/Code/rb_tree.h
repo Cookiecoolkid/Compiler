@@ -83,20 +83,21 @@ void rightRotate(RBNode node);
 void fixViolation(RBNode node);
 void printTree(RBNode node);
 void printScopeChain();
-void initSymbolTable();
-void enterScope();
-void exitScope();
 
-/* ================ Public API ================ */
-void insert(Symbol symbol);
-RBNode search(char* name, bool isDef);
+
 RBNode searchRBTree(RBNode root, char* name);
 RBNode searchByStructID(RBNode node, struct_t structID);
-
 Symbol createSymbol(const char* name, Type type);
 Type createBasicType(int basicType);
 Type createArrayType(Type elem, int size);
 Type createStructType(FieldList struct_members);
+
+/* ================ Public API ================ */
+void insert(Symbol symbol);
+RBNode search(char* name, bool isDef);
+void initSymbolTable();
+void enterScope();
+void exitScope();
 
 
 #endif // _RB_TREE_H
