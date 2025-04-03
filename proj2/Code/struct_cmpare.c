@@ -140,7 +140,7 @@ int compareTypes(Type t1, Type t2) {
             return compareTypes(t1->u.array.elem, t2->u.array.elem);
         case STRUCTURE:
             // 比较结构体的字段列表
-            return compareFieldLists(t1->u.structure.struct_members, t2->u.structure.struct_members) ? 0 : 1;
+            return compareFieldLists(t1->u.structure.struct_members, t2->u.structure.struct_members);
         case FUNCTION:
             // 比较函数的参数列表和返回类型
             if (!compareFieldLists(t1->u.function.params, t2->u.function.params)) {
@@ -151,7 +151,7 @@ int compareTypes(Type t1, Type t2) {
             return 0;
     }
 }
-
+// 相等返回 0，小于返回负数，大于返回正数
 int compareFieldLists(FieldList fl1, FieldList fl2) {
     // 如果两个字段列表都为空，认为相等
     if (fl1 == NULL && fl2 == NULL) {

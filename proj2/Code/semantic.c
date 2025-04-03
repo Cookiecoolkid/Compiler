@@ -554,11 +554,24 @@ Type check_exp(Node *exp) {
             report_error(INVALID_LVALUE_ASSIGNMENT, exp->line, msg);
         }
 
+        if (leftType && leftType->kind == BASIC && leftType->u.basic >= 2) {
+            char leftStructName[256], rightStructName[256];
+            snprintf(leftStructName, sizeof(leftStructName), "%d", leftType->u.basic);
+            snprintf(rightStructName, sizeof(rightStructName), "%d", rightType->u.basic);
+            Type leftBasicType = search(leftStructName, true)->symbol->type;
+            Type rightBasicType = search(rightStructName, true)->symbol->type;
 
-        if (leftType && rightType && compareTypes(leftType, rightType)) {
-            snprintf(msg, MSG_SIZE, "Type mismatch in assignment");
-            report_error(TYPE_MISMATCH_ASSIGNMENT, exp->line, msg);
+            if (leftBasicType && rightBasicType && compareTypes(leftBasicType, rightBasicType) != 0) {
+                snprintf(msg, MSG_SIZE, "Type mismatch in assignment");
+                report_error(TYPE_MISMATCH_ASSIGNMENT, exp->line, msg);
+            }
+        } else {
+            if (leftType && rightType && compareTypes(leftType, rightType) != 0) {
+                snprintf(msg, MSG_SIZE, "Type mismatch in assignment");
+                report_error(TYPE_MISMATCH_ASSIGNMENT, exp->line, msg);
+            }
         }
+
         return leftType;
     } else if (strcmp(second_child->name, "AND") == 0 || strcmp(second_child->name, "OR") == 0) {
         // Exp AND/OR Exp
