@@ -1,0 +1,15 @@
+struct a {
+  int a; int b;
+};
+
+struct b {
+  int c; int d;
+};
+
+struct a f();
+struct b f();
+
+struct a f() {
+  struct a bb;
+  return bb;
+}
