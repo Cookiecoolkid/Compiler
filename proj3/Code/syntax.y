@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "node.h"
 
 Node *root = NULL;
@@ -60,13 +61,13 @@ int has_error = 0;
 %left LC RC
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
-
 %%
+
 /* ------------------------- Program ---------------------------*/
 
 Program: ExtDefList {
     $$ = create_node("Program", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
     root = $$;
 };
 
@@ -74,31 +75,30 @@ Program: ExtDefList {
 
 ExtDefList: ExtDef ExtDefList {
     $$ = create_node("ExtDefList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 }
 | /* empty */ {
     $$ = create_node("", 0, VALUE_OTHER);
+    link_nodes($$, NULL);
 };
 
 /* ------------------------- ExtDef ---------------------------*/
 
 ExtDef: Specifier ExtDecList SEMI {
     $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Specifier SEMI {
     $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 }
 | Specifier FunDec CompSt {
     $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
+}
+| Specifier FunDec SEMI {
+    $$ = create_node("ExtDef", @1.first_line, VALUE_OTHER);
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Specifier error SEMI {
     /* yyerror("ExtDef syntax error"); */
@@ -108,40 +108,33 @@ ExtDef: Specifier ExtDecList SEMI {
 
 ExtDecList: VarDec {
     $$ = create_node("ExtDecList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | VarDec COMMA ExtDecList {
     $$ = create_node("ExtDecList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 };
 
 /* ------------------------- Specifier ---------------------------*/
 
 Specifier: TYPE {
     $$ = create_node("Specifier", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | StructSpecifier {
     $$ = create_node("Specifier", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 };
 
 /* ------------------------- StructSpecifier ---------------------------*/
 
 StructSpecifier: STRUCT OptTag LC DefList RC {
     $$ = create_node("StructSpecifier", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
-    $$->child->next->next->next = $4;
-    $$->child->next->next->next->next = $5;
+    link_nodes($$, $1, $2, $3, $4, $5, NULL);
 }
 | STRUCT Tag {
     $$ = create_node("StructSpecifier", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 }
 | STRUCT OptTag LC error RC {
     /* ("StructSpecifier syntax error"); */
@@ -157,47 +150,40 @@ StructSpecifier: STRUCT OptTag LC DefList RC {
 
 OptTag: ID {
     $$ = create_node("OptTag", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | /* empty */{
     $$ = create_node("OptTag", 0, VALUE_OTHER);
+    link_nodes($$, NULL);
 };
 
 /* ------------------------- Tag ---------------------------*/
 
 Tag: ID {
     $$ = create_node("Tag", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 };
 
 /* ------------------------- VarDec ---------------------------*/
 
 VarDec: ID {
     $$ = create_node("VarDec", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | VarDec LB INT RB {
     $$ = create_node("VarDec", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
-    $$->child->next->next->next = $4;
+    link_nodes($$, $1, $2, $3, $4, NULL);
 };
 
 /* ------------------------- FunDec ---------------------------*/
 
 FunDec: ID LP VarList RP {
     $$ = create_node("FunDec", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
-    $$->child->next->next->next = $4;
+    link_nodes($$, $1, $2, $3, $4, NULL);
 }
 | ID LP RP {
     $$ = create_node("FunDec", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | ID LP error RP {
     /* yyerror("FunDec syntax error"); */
@@ -207,31 +193,25 @@ FunDec: ID LP VarList RP {
 
 VarList: ParamDec COMMA VarList {
     $$ = create_node("VarList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | ParamDec {
     $$ = create_node("VarList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 };
 
 /* ------------------------- ParamDec ---------------------------*/
 
 ParamDec: Specifier VarDec {
     $$ = create_node("ParamDec", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 };
 
 /* ------------------------- CompSt ---------------------------*/
 
 CompSt: LC DefList StmtList RC {
     $$ = create_node("CompSt", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
-    $$->child->next->next->next = $4;
+    link_nodes($$, $1, $2, $3, $4, NULL);
 }
 | LC error StmtList RC {
     /*yyerror("CompSt syntax error");*/
@@ -241,55 +221,38 @@ CompSt: LC DefList StmtList RC {
 
 StmtList: Stmt StmtList {
     $$ = create_node("StmtList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 }
 | /* empty */{
     $$ = create_node("", 0, VALUE_OTHER);
+    link_nodes($$, NULL);
 };
 
 /* ------------------------- Stmt ---------------------------*/
 
 Stmt: Exp SEMI {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 }
 | CompSt {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | RETURN Exp SEMI {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | IF LP Exp RP Stmt %prec LOWER_THAN_ELSE {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
-    $$->child->next->next->next = $4;
-    $$->child->next->next->next->next = $5;
+    link_nodes($$, $1, $2, $3, $4, $5, NULL);
 }
 | IF LP Exp RP Stmt ELSE Stmt {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
-    $$->child->next->next->next = $4;
-    $$->child->next->next->next->next = $5;
-    $$->child->next->next->next->next->next = $6;
-    $$->child->next->next->next->next->next->next = $7;
+    link_nodes($$, $1, $2, $3, $4, $5, $6, $7, NULL);
 }
 | WHILE LP Exp RP Stmt {
     $$ = create_node("Stmt", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
-    $$->child->next->next->next = $4;
-    $$->child->next->next->next->next = $5;
+    link_nodes($$, $1, $2, $3, $4, $5, NULL);
 }
 | error SEMI {
     /*yyerror("Stmt syntax error");*/
@@ -317,20 +280,18 @@ Stmt: Exp SEMI {
 
 DefList: Def DefList {
     $$ = create_node("DefList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 }
 | /* empty */ {
     $$ = create_node("", 0, VALUE_OTHER);
+    link_nodes($$, NULL);
 };
 
 /* ------------------------- Def ---------------------------*/
 
 Def: Specifier DecList SEMI { 
     $$ = create_node("Def", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Specifier error SEMI {
     /*yyerror("Def syntax error");*/
@@ -340,131 +301,97 @@ Def: Specifier DecList SEMI {
 
 DecList: Dec {
     $$ = create_node("DecList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | Dec COMMA DecList {
     $$ = create_node("DecList", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 };
 
 /* ------------------------- Dec ---------------------------*/
 
 Dec: VarDec {
     $$ = create_node("Dec", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | VarDec ASSIGNOP Exp {
     $$ = create_node("Dec", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 };
 
 /* ------------------------- Exp ---------------------------*/
 
 Exp: Exp ASSIGNOP Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp AND Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp OR Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp RELOP Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp PLUS Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp MINUS Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp STAR Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp DIV Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | LP Exp RP {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | MINUS Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 }
 | NOT Exp {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
+    link_nodes($$, $1, $2, NULL);
 }
 | ID LP Args RP {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
-    $$->child->next->next->next = $4;
+    link_nodes($$, $1, $2, $3, $4, NULL);
 }
 | ID LP RP {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp LB Exp RB {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
-    $$->child->next->next->next = $4;
+    link_nodes($$, $1, $2, $3, $4, NULL);
 }
 | Exp DOT ID {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | ID {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | INT {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | FLOAT {
     $$ = create_node("Exp", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 }
 | Exp ASSIGNOP error {
     /* yyerror("Exp syntax error"); */
@@ -494,18 +421,16 @@ Exp: Exp ASSIGNOP Exp {
     /* yyerror("Exp syntax error"); */
 };
 
+/* ------------------------- Args ---------------------------*/
 
 Args: Exp COMMA Args {
     $$ = create_node("Args", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
-    $$->child->next = $2;
-    $$->child->next->next = $3;     
+    link_nodes($$, $1, $2, $3, NULL);
 }
 | Exp {
     $$ = create_node("Args", @1.first_line, VALUE_OTHER);
-    $$->child = $1;
+    link_nodes($$, $1, NULL);
 };
-
 %%
 
 Node *create_node(const char *name, int line, ValueType type, ...) {
@@ -554,6 +479,27 @@ Node *create_node(const char *name, int line, ValueType type, ...) {
     return new_node;
 }
 
+void link_nodes(Node *parent, ...) {
+    va_list args;
+    va_start(args, parent);
+
+    Node *current = parent;
+    bool first_token = true;
+    while (1) {
+        Node *child = va_arg(args, Node *);
+        if (child == NULL) break;
+
+        if (first_token) {
+            current->child = child;
+            first_token = false;
+        } else {
+            current->next = child;
+        }
+        current = child;
+    }
+
+    va_end(args);
+}
 
 int is_unit_token(const char *name) {
     static const char *unit_tokens[] = {
@@ -629,4 +575,14 @@ void free_tree(Node *node) {
 void yyerror(const char* msg) {
     fprintf(stdout, "Error type B at line %d: %s.\n", yylineno, msg);
     has_error = 1;
+}
+
+int get_child_num(Node *node) {
+    int num = 0;
+    Node *child = node->child;
+    while (child) {
+        num++;
+        child = child->next;
+    }
+    return num;
 }
