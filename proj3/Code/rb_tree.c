@@ -35,6 +35,8 @@ void updateRoot(RBNode node) {
             symTable.globalStructRoot = node;
         } else if (node->symbol->type->kind == FUNCTION) {
             symTable.globalFuncRoot = node;
+        } else {
+            symTable.currentScope->root = node;
         }
     }
 }
