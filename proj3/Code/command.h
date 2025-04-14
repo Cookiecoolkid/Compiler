@@ -49,5 +49,7 @@ char* command_to_string(command* cmd);
 
 void free_command(command* cmd);
 
+void append_command_to_file(command* cmd, FILE* file);
+
 
 #endif // __COMMAND_H

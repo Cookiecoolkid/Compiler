@@ -95,6 +95,13 @@ char* command_to_string(command* cmd) {
     return str;
 }
 
+void append_command_to_file(command* cmd, FILE* file) {
+    char* str = command_to_string(cmd);
+    fprintf(file, "%s\n", str);
+    free(str);
+}
+
+
 void free_command(command* cmd) {
     if (cmd != NULL) {
         free(cmd);
