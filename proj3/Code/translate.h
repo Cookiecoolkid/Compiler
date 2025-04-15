@@ -20,13 +20,13 @@ void translate_defList(Node *defList, FILE *file);
 void translate_def(Node *def, FILE *file);
 void translate_decList(Node *decList, FILE *file);
 void translate_dec(Node *dec, FILE *file);
-void translate_varList(Node *varList, FILE *file);
-void translate_paramDec(Node *paramDec, FILE *file);
+// void translate_varList(Node *varList, FILE *file);
+// void translate_paramDec(Node *paramDec, FILE *file);
 void translate_stmtList(Node *stmtList, FILE *file);
 void translate_stmt(Node *stmt, FILE *file);
 operand translate_exp(Node *exp, FILE *file);
 void translate_args(Node *args, FILE *file);
 
-operand translate_cond(Node *cond, FILE *file, operand label1, operand label2);
+void translate_cond(Node *cond, FILE *file, operand label1, operand label2);
 
 #endif // __TRANSLATE_H__

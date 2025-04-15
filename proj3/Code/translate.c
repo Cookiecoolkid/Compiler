@@ -311,7 +311,7 @@ void translate_stmt(Node *stmt, FILE *file) {
             operand label1 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
             operand label2 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
             operand label3 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
-            operand cond = translate_cond(exp, file, label1, label2);
+            translate_cond(exp, file, label1, label2);
 
             command label1Cmd = create_command(LABEL, NULL_OP, NULL_OP, label1, NULL_RELOP);
             append_command_to_file(label1Cmd, file);
@@ -332,7 +332,7 @@ void translate_stmt(Node *stmt, FILE *file) {
             // IF LP Exp RP Stmt
             operand label1 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
             operand label2 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
-            operand cond = translate_cond(exp, file, NULL, label2);
+            translate_cond(exp, file, label1, label2);
 
             command label1Cmd = create_command(LABEL, NULL_OP, NULL_OP, label1, NULL_RELOP);
             append_command_to_file(label1Cmd, file);
@@ -354,7 +354,7 @@ void translate_stmt(Node *stmt, FILE *file) {
         command label1Cmd = create_command(LABEL, NULL_OP, NULL_OP, label1, NULL_RELOP);
         append_command_to_file(label1Cmd, file);
 
-        operand cond = translate_cond(exp, file, label2, label3);
+        translate_cond(exp, file, label2, label3);
 
         command label2Cmd = create_command(LABEL, NULL_OP, NULL_OP, label2, NULL_RELOP);
         append_command_to_file(label2Cmd, file);
@@ -369,14 +369,25 @@ void translate_stmt(Node *stmt, FILE *file) {
     }
 }
 
-operand translate_cond(Node *cond, FILE *file, operand label1, operand label2) {
+void translate_cond(Node *cond, FILE *file, operand label1, operand label2) {
     // Cond: Exp RELOP Exp
+    // label1: true label  label2: false label
     assert(cond != NULL);
     Node *exp1 = cond->child;
     Node *relop = exp1->next;
     Node *exp2 = relop->next;
 
-    // TODO
+    operand op1 = translate_exp(exp1, file);
+    operand op2 = translate_exp(exp2, file);
+
+
+    // 创建比较指令
+    command ifgotoCmd = create_command(COND_GOTO, op1, op2, label1, relop->name);
+    append_command_to_file(ifgotoCmd, file);
+
+    // 添加跳转到 false label 的指令
+    command gotoLabel2Cmd = create_command(GOTO, NULL_OP, NULL_OP, label2, NULL_RELOP);
+    append_command_to_file(gotoLabel2Cmd, file);
 }
 
 operand translate_exp(Node *exp, FILE *file) {

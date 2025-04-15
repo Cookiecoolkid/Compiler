@@ -23,22 +23,26 @@ operand create_operand(int value, char* name, int kind, int type) {
     op->kind = kind;
     op->type = type;
     op->value = value;
-    op->name = strdup(name);
 
     switch (kind) {
         case CONSTANT:
+            op->name = strdup(name);
             op->tag = 0;
             break;
         case VARIABLE:
+            op->name = strdup(name);
             op->tag = 0;
             break;
         case FUNCTION_NAME:
+            op->name = strdup(name);
             op->tag = 0;
             break;
         case LABEL_NAME:
+            op->name = "label";
             op->tag = labelTag++;
             break;
         case TEMP:
+            op->name = strdup(name);
             op->tag = 0;
             break;
         default:
@@ -72,7 +76,7 @@ char* command_to_string(command cmd) {
     // 根据操作类型生成字符串
     switch (cmd->op) {
         case LABEL:
-            snprintf(str, 256, "LABEL %d", cmd->result);
+            snprintf(str, 256, "LABEL %s%d", cmd->result->name, cmd->result->tag);
             break;
         case FUNCTION:
             snprintf(str, 256, "FUNCTION %s", cmd->result->name);
@@ -102,10 +106,10 @@ char* command_to_string(command cmd) {
             snprintf(str, 256, "*%d := %d", cmd->arg1, cmd->arg2);
             break;
         case GOTO:
-            snprintf(str, 256, "GOTO %d", cmd->result);
+            snprintf(str, 256, "GOTO %s%d", cmd->result->name, cmd->result->tag);
             break;
         case COND_GOTO:
-            snprintf(str, 256, "IF %d %s %d GOTO %d", cmd->arg1, rel_strings[cmd->rel], cmd->arg2, cmd->result);
+            snprintf(str, 256, "IF %s %s %s GOTO %s%d", cmd->arg1->name, rel_strings[cmd->rel], cmd->arg2->name, cmd->result->name, cmd->result->tag);
             break;
         case RETURN:
             snprintf(str, 256, "RETURN %d", cmd->result);
