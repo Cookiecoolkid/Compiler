@@ -65,7 +65,7 @@ WHILE "while"
 {SEMI}     { yylval.node = create_node("SEMI", yylineno, VALUE_OTHER); return SEMI; }
 {COMMA}    { yylval.node = create_node("COMMA", yylineno, VALUE_OTHER); return COMMA; }
 {ASSIGNOP} { yylval.node = create_node("ASSIGNOP", yylineno, VALUE_OTHER); return ASSIGNOP; }
-{RELOP}    { yylval.node = create_node("RELOP", yylineno, VALUE_OTHER); return RELOP; } 
+{RELOP}    { yylval.node = create_node("RELOP", yylineno, VALUE_STRING, strdup(yytext)); return RELOP; } 
 {PLUS}     { yylval.node = create_node("PLUS", yylineno, VALUE_OTHER); return PLUS; }
 {MINUS}    { yylval.node = create_node("MINUS", yylineno, VALUE_OTHER); return MINUS; }
 {STAR}     { yylval.node = create_node("STAR", yylineno, VALUE_OTHER); return STAR; }
