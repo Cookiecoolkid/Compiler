@@ -1,6 +1,12 @@
 #ifndef __COMMAND_H
 #define __COMMAND_H
 
+#define NULL_VALUE 0
+#define NULL_NAME NULL
+#define NULL_OP NULL
+#define NULL_RELOP 0
+#define INT_FLOAT_SIZE 4
+
 // 定义操作类型枚举
 typedef enum {
     LABEL,        // 定义标号
@@ -32,24 +38,52 @@ typedef enum {
     GT,   // 大于
     LE,   // 小于等于
     GE    // 大于等于
-} rel_op;
+} relop;
+
+typedef enum {
+    VARIABLE,    // 变量
+    CONSTANT,    // 常量
+    TEMP,        // 临时变量
+    FUNCTION_NAME, // 函数名
+    LABEL_NAME     // 标签名
+} operand_kind;
+
+typedef enum {
+    VAL,         // 值
+    ADDRESS      // 地址
+} operand_type;
+
+typedef struct command_* command;
+typedef struct operand_* operand;
+
+struct operand_ {
+    operand_kind kind;
+    operand_type type;
+    
+    int value;   // 常量值 / 变量size
+    char* name;  // 变量名或函数名
+
+    unsigned tag; // 标记，用于区分不同的操作数
+};
 
 // 定义 command 结构体
-typedef struct {
+struct command_ {
     op_type op;   // 操作类型
-    int arg1;     // 第一个参数
-    int arg2;     // 第二个参数（对于单目运算符或某些操作，可能不使用）
-    int result;   // 结果或目标标号
-    rel_op rel;   // 比较操作符（仅用于条件跳转）
-} command;
+    operand arg1;     // 第一个参数
+    operand arg2;     // 第二个参数（对于单目运算符或某些操作，可能不使用）
+    operand result;   // 结果或目标标号
+    relop rel;   // 比较操作符（仅用于条件跳转）
+};
 
-command* create_command(op_type op, int arg1, int arg2, int result, rel_op rel);
+operand create_operand(int value, char* name, int kind, int type);
+command create_command(op_type op, operand arg1, operand arg2, operand result, relop rel);
 
-char* command_to_string(command* cmd);
+char* command_to_string(command cmd);
 
-void free_command(command* cmd);
+void free_command(command cmd);
+void free_operand(operand op);
 
-void append_command_to_file(command* cmd, FILE* file);
+void append_command_to_file(command cmd, FILE* file);
 
 
 #endif // __COMMAND_H

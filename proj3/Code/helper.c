@@ -1,5 +1,6 @@
 #include "rb_tree.h"
 #include "helper.h"
+#include <assert.h>
 
 // 比较两个结构体类型是否一致（成员顺序无关）
 int compareStructTypes(Type t1, Type t2) {
@@ -192,4 +193,39 @@ int getFieldListLength(FieldList fl) {
         fl = fl->tail;
     }
     return count;
+}
+
+int calculateTypeSize(Type type) {
+    switch (type->kind) {
+        case BASIC: 
+            return 4; // int, float 大小为4字节
+        case ARRAY:
+            return type->u.array.size * calculateTypeSize(type->u.array.elem);
+        case STRUCTURE: {
+            int size = 0;
+            FieldList field = type->u.structure.struct_members;
+            while (field != NULL) {
+                size += calculateTypeSize(field->type);
+                field = field->tail;
+            }
+            return size;
+        }
+        case FUNCTION:
+            assert(0); // 函数类型不计算大小
+        default:
+            assert(0); // 未知类型
+    }
+    return 0;
+}
+
+int calculateFieldOffset(FieldList field, const char* name) {
+    int offset = 0;
+    while (field != NULL) {
+        if (strcmp(field->name, name) == 0) {
+            return offset;
+        }
+        offset += calculateTypeSize(field->type);
+        field = field->tail;
+    }
+    return -1; // 未找到字段
 }

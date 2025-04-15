@@ -18,4 +18,8 @@ FieldList* fieldListToArray(FieldList fl, int len);
 void appendFieldList(FieldList* fl, FieldList newField);
 FieldList searchFieldList(FieldList fl, const char* name);
 
+/* ================ Size and Offset ================ */
+int calculateTypeSize(Type type);
+int calculateFieldOffset(FieldList field, const char* name);
+
 #endif // __HELPER_H

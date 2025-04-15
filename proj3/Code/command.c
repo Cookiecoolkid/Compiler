@@ -1,8 +1,10 @@
 #include "command.h"
 #include <stdio.h>
 
-command* create_command(op_type op, int arg1, int arg2, int result, rel_op rel) {
-    command* cmd = (command*)malloc(sizeof(command));
+unsigned labelTag = 0;
+
+command create_command(op_type op, operand arg1, operand arg2, operand result, relop rel) {
+    command cmd = (command)malloc(sizeof(command));
     if (cmd == NULL) {
         perror("Memory allocation failed");
         exit(1);
@@ -15,7 +17,46 @@ command* create_command(op_type op, int arg1, int arg2, int result, rel_op rel) 
     return cmd;
 }
 
-char* command_to_string(command* cmd) {
+// 定义 create_operand 函数
+operand create_operand(int value, char* name, int kind, int type) {
+    operand op;
+    op->kind = kind;
+    op->type = type;
+    op->value = value;
+    op->name = strdup(name);
+
+    switch (kind) {
+        case CONSTANT:
+            op->tag = 0;
+            break;
+        case VARIABLE:
+            op->tag = 0;
+            break;
+        case FUNCTION_NAME:
+            op->tag = 0;
+            break;
+        case LABEL_NAME:
+            op->tag = labelTag++;
+            break;
+        case TEMP:
+            op->tag = 0;
+            break;
+        default:
+            fprintf(stderr, "Unknown operand kind\n");
+            exit(1);
+    }
+
+    return op;
+}
+
+// 定义 free_operand 函数，用于释放 operand 中的动态分配内存
+void free_operand(operand op) {
+    if (op->kind == VARIABLE || op->kind == FUNCTION_NAME || op->kind == LABEL_NAME) {
+        free(op->name);
+    }
+}
+
+char* command_to_string(command cmd) {
     // 定义操作类型和比较操作符的字符串表示
     const char* rel_strings[] = {
         "==", "!=", "<", ">", "<=", ">="
@@ -34,7 +75,7 @@ char* command_to_string(command* cmd) {
             snprintf(str, 256, "LABEL %d", cmd->result);
             break;
         case FUNCTION:
-            snprintf(str, 256, "FUNCTION %d", cmd->result);
+            snprintf(str, 256, "FUNCTION %s", cmd->result->name);
             break;
         case ASSIGN:
             snprintf(str, 256, "%d := %d", cmd->result, cmd->arg1);
@@ -70,7 +111,7 @@ char* command_to_string(command* cmd) {
             snprintf(str, 256, "RETURN %d", cmd->result);
             break;
         case DEC:
-            snprintf(str, 256, "DEC %d %d", cmd->result, cmd->arg1);
+            snprintf(str, 256, "DEC %s %d", cmd->result->name, cmd->result->value);
             break;
         case ARG:
             snprintf(str, 256, "ARG %d", cmd->arg1);
@@ -79,7 +120,7 @@ char* command_to_string(command* cmd) {
             snprintf(str, 256, "%d := CALL %d", cmd->result, cmd->arg1);
             break;
         case PARAM:
-            snprintf(str, 256, "PARAM %d", cmd->arg1);
+            snprintf(str, 256, "PARAM %s", cmd->result->name);
             break;
         case READ:
             snprintf(str, 256, "READ %d", cmd->result);
@@ -95,14 +136,15 @@ char* command_to_string(command* cmd) {
     return str;
 }
 
-void append_command_to_file(command* cmd, FILE* file) {
+void append_command_to_file(command cmd, FILE* file) {
     char* str = command_to_string(cmd);
     fprintf(file, "%s\n", str);
     free(str);
+    free_command(cmd);
 }
 
 
-void free_command(command* cmd) {
+void free_command(command cmd) {
     if (cmd != NULL) {
         free(cmd);
     }
