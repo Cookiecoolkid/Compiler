@@ -84,8 +84,17 @@ void translate_funDec(Node *funDec, FILE *file) {
     Node *thirdNode = idNode->next->next;
 
     char *funcName = idNode->value.value.str_val;
+
+    if (strcmp(funcName, "READ") == 0) {
+        // TODO
+    }
+
+    if (strcmp(funcName, "WRITE") == 0) {
+        // TODO
+    }
+
     operand funcOp = create_operand(NULL_VALUE, funcName, FUNCTION_NAME, VAL);
-    command funcCmd = create_command(FUNCTION, NULL_OP, NULL_OP, funcOp, NULL_RELOP);
+    command funcCmd = create_command(FUNCTION_OP, NULL_OP, NULL_OP, funcOp, NULL_RELOP);
     append_command_to_file(funcCmd, file);
 
     if (thirdNode->next == NULL) {
@@ -141,7 +150,7 @@ operand translate_varDec(Node *varDec, FILE *file, bool inRecursion) {
             // Struct
             RBNode structVar = search(itoa(type->u.basic), true);
             if (structVar == NULL) assert(0);
-            int size_ = calculate_size(type);
+            int size_ = calculateTypeSize(structVar->symbol->type);
             op = create_operand(size_, structVar->symbol->type->u.structure.ID, VARIABLE, VAL);
             command structCmd = create_command(DEC, NULL_OP, NULL_OP, op, NULL_RELOP);
             append_command_to_file(structCmd, file);
@@ -374,20 +383,56 @@ void translate_cond(Node *cond, FILE *file, operand label1, operand label2) {
     // label1: true label  label2: false label
     assert(cond != NULL);
     Node *exp1 = cond->child;
-    Node *relop = exp1->next;
-    Node *exp2 = relop->next;
+    Node *node = exp1->next;
+    Node *exp2 = node->next;
 
-    operand op1 = translate_exp(exp1, file);
-    operand op2 = translate_exp(exp2, file);
+    if (strcmp(exp1->name, "NOT") == 0) {
+        // NOT Exp
+        translate_cond(exp1->next, file, label2, label1);
+        return;
+    }
 
+    if (strcmp(node->name, "RELOP") == 0) {
+        // RELOP
+        operand op1 = translate_exp(exp1, file);
+        operand op2 = translate_exp(exp2, file);
+        char *relop_name = node->value.value.str_val;
+        relop relop = str2relop(relop_name);
 
-    // 创建比较指令
-    command ifgotoCmd = create_command(COND_GOTO, op1, op2, label1, relop->name);
-    append_command_to_file(ifgotoCmd, file);
+        command ifgotoCmd = create_command(COND_GOTO, op1, op2, label1, relop);
+        append_command_to_file(ifgotoCmd, file);
 
-    // 添加跳转到 false label 的指令
-    command gotoLabel2Cmd = create_command(GOTO, NULL_OP, NULL_OP, label2, NULL_RELOP);
-    append_command_to_file(gotoLabel2Cmd, file);
+        command gotoLabel2Cmd = create_command(GOTO, NULL_OP, NULL_OP, label2, NULL_RELOP);
+        append_command_to_file(gotoLabel2Cmd, file);
+    } else if (strcmp(node->name, "AND") == 0) {
+        // AND
+        operand label = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+        translate_cond(exp1, file, label, label2);
+
+        command labelCmd = create_command(LABEL, NULL_OP, NULL_OP, label, NULL_RELOP);
+        append_command_to_file(labelCmd, file);
+
+        translate_cond(exp2, file, label1, label2);
+    } else if (strcmp(node->name, "OR") == 0) {
+        // OR
+        operand label = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+        translate_cond(exp1, file, label1, label);
+
+        command labelCmd = create_command(LABEL, NULL_OP, NULL_OP, label, NULL_RELOP);
+        append_command_to_file(labelCmd, file);
+
+        translate_cond(exp2, file, label1, label2);
+    } else {
+        // others (exp1 != 0)
+        operand op1 = translate_exp(exp1, file);
+        operand op2 = create_operand(0, NULL, CONSTANT, VAL);
+
+        command ifgotoCmd = create_command(COND_GOTO, op1, op2, label1, NE);
+
+        command gotoLabel2Cmd = create_command(GOTO, NULL_OP, NULL_OP, label2, NULL_RELOP);
+        append_command_to_file(gotoLabel2Cmd, file);
+    }
+
 }
 
 operand translate_exp(Node *exp, FILE *file) {
@@ -397,15 +442,174 @@ operand translate_exp(Node *exp, FILE *file) {
     //     | ID LP Args RP | Exp LB Exp RB | ID | INT | FLOAT
     assert(exp != NULL);
     Node *child = exp->child;
-    // TODO
+
+    // 基本情况：处理叶子节点
+    if (child->next == NULL) {
+        if (strcmp(child->name, "INT") == 0) {
+            // 整数常量
+            operand constantOp = create_operand(child->value.value.int_val, "#", CONSTANT, VAL);
+            return constantOp;
+        } else if (strcmp(child->name, "FLOAT") == 0) {
+            // 浮点数常量
+            operand constantOp = create_operand(child->value.value.float_val, "#", CONSTANT, VAL);
+            return constantOp;
+        } else if (strcmp(child->name, "ID") == 0) {
+            // 变量引用
+            char *name = child->value.value.str_val;
+            RBNode var = search(name, false); // 假设 search 是符号表查找函数
+            if (var == NULL) assert(0);
+            
+            Type type = var->symbol->type;
+            assert(type->kind == BASIC); // 假设只支持基本类型
+
+            if (type->u.basic <= 1) {
+                // INT/FLOAT 变量
+                return create_operand(INT_FLOAT_SIZE, name, VARIABLE, VAL);
+            } else {
+                // 结构体
+                RBNode structVar = search(itoa(type->u.basic), true);
+                if (structVar == NULL) assert(0); 
+                
+                int size_ = calculateTypeSize(structVar->symbol->type);
+                return create_operand(size_, structVar->symbol->type->u.structure.ID, VARIABLE, VAL);
+            }
+        }
+    }
+
+    if (child->next != NULL) {
+        if (strcmp(child->name, "LP") == 0) {
+            // LP Exp RP
+            return translate_exp(child->next, file);
+        } else if (strcmp(child->name, "MINUS") == 0) {
+            // MINUS Exp
+            Node *exp1 = child->next;
+            operand op = translate_exp(exp1, file);
+            operand resOp = create_operand(-op->value, NULL, TEMP, VAL);
+            operand zeroOp = create_operand(0, NULL, CONSTANT, VAL);
+            command minusCmd = create_command(SUB, resOp, zeroOp, op, NULL_RELOP);
+            append_command_to_file(minusCmd, file);
+            return resOp;
+        } else if (strcmp(child->name, "ASSIGNOP") == 0) {
+            // Exp ASSIGNOP Exp
+            Node *exp1 = child;
+            Node *exp2 = child->next;
+            operand lhs = translate_exp(exp1, file);
+            operand rhs = translate_exp(exp2, file);
+            command assignCmd = create_command(ASSIGN, lhs, rhs, NULL_OP, NULL_RELOP);
+            append_command_to_file(assignCmd, file);
+            return lhs;
+        } 
+        Node *secondChild = child->next;
+        if ((strcmp(secondChild->name, "PLUS") == 0) || (strcmp(secondChild->name, "MINUS") == 0) ||
+            (strcmp(secondChild->name, "STAR") == 0) || (strcmp(secondChild->name, "DIV") == 0)) {
+            // Exp PLUS Exp | Exp MINUS Exp | Exp STAR Exp | Exp DIV Exp
+            Node *exp1 = child;
+            Node *exp2 = secondChild->next;
+            operand op1 = translate_exp(exp1, file);
+            operand op2 = translate_exp(exp2, file);
+            operand resOp;
+            if (strcmp(secondChild->name, "PLUS") == 0) {
+                resOp = create_operand(op1->value + op2->value, NULL, TEMP, VAL);
+                command plusCmd = create_command(ADD, resOp, op1, op2, NULL_RELOP);
+                append_command_to_file(plusCmd, file);
+            } else if (strcmp(secondChild->name, "MINUS") == 0) {
+                resOp = create_operand(op1->value - op2->value, NULL, TEMP, VAL);
+                command minusCmd = create_command(SUB, resOp, op1, op2, NULL_RELOP);
+                append_command_to_file(minusCmd, file);
+            } else if (strcmp(secondChild->name, "STAR") == 0) {
+                resOp = create_operand(op1->value * op2->value, NULL, TEMP, VAL);
+                command mulCmd = create_command(MUL, resOp, op1, op2, NULL_RELOP);
+                append_command_to_file(mulCmd, file);
+            } else if (strcmp(secondChild->name, "DIV") == 0) {
+                resOp = create_operand(op1->value / op2->value, NULL, TEMP, VAL);
+                command divCmd = create_command(DIV, resOp, op1, op2, NULL_RELOP);
+                append_command_to_file(divCmd, file);
+            }
+        }
+        if ((strcmp(child->name, "NOT") == 0) || (strcmp(secondChild->name, "RELOP") == 0) ||
+            (strcmp(secondChild->name, "AND") == 0) || (strcmp(secondChild->name, "OR") == 0)) {
+            // NOT Exp | Exp RELOP Exp | Exp AND Exp | Exp OR Exp
+            operand label1 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+            operand label2 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+
+            operand resOp = create_operand(NULL_VALUE, NULL, TEMP, VAL);
+            operand zeroOp = create_operand(0, NULL, CONSTANT, VAL);
+
+            command assignOp0 = create_command(ASSIGN, zeroOp, NULL_OP, resOp, NULL_RELOP);
+            append_command_to_file(assignOp0, file);
+
+            translate_cond(exp, file, label1, label2);
+
+            operand oneOp = create_operand(1, NULL, CONSTANT, VAL);
+            command assignOp1 = create_command(ASSIGN, oneOp, NULL_OP, resOp, NULL_RELOP);
+            command label1Cmd = create_command(LABEL, NULL_OP, NULL_OP, label1, NULL_RELOP);
+            command label2Cmd = create_command(LABEL, NULL_OP, NULL_OP, label2, NULL_RELOP);
+
+            append_command_to_file(label1Cmd, file);
+            append_command_to_file(assignOp1, file);
+            append_command_to_file(label2Cmd, file);
+
+            return resOp;
+        }
+        if (strcmp(secondChild->name, "LP") == 0) {
+            if (secondChild->next == NULL) {
+                // ID LP RP
+                char *funcName = child->value.value.str_val;
+                RBNode func = search(funcName, true);
+                if (func == NULL) assert(0);
+
+                if (strcmp(funcName, "read") == 0) {
+                    operand place = create_operand(0, NULL, TEMP, VAL);
+                    command readCmd = create_command(READ, NULL_OP, NULL_OP, place, NULL_RELOP);
+                    append_command_to_file(readCmd, file);
+                    return place;
+                } else {
+                    operand place = create_operand(0, NULL, TEMP, VAL);
+                    operand funcOp = create_operand(NULL_VALUE, funcName, FUNCTION_NAME, VAL);
+                    command callCmd = create_command(CALL, funcOp, NULL_OP, place, NULL_RELOP);
+                    append_command_to_file(callCmd, file);
+                    return place;
+                }
+            } else {
+                // ID LP Args RP
+                char *funcName = child->value.value.str_val;
+                RBNode func = search(funcName, true);
+                if (func == NULL) assert(0);
+
+                Node *args = secondChild->next;
+                translate_args(args, file);
+
+                if (strcmp(funcName, "write") == 0) {
+                    operand arg = translate_exp(args->child, file);
+                    command writeCmd = create_command(WRITE, arg, NULL_OP, NULL_OP, NULL_RELOP);
+                    append_command_to_file(writeCmd, file);
+                    operand place = create_operand(0, NULL, CONSTANT, VAL);
+                    return place;
+                } else {
+                    operand place = create_operand(0, NULL, TEMP, VAL);
+                    operand funcOp = create_operand(NULL_VALUE, funcName, FUNCTION_NAME, VAL);
+                    command callCmd = create_command(CALL, funcOp, NULL_OP, place, NULL_RELOP);
+                    append_command_to_file(callCmd, file);
+                    return place;
+                }
+            }
+        }
+    }
+
+    return NULL_OP; // 默认返回
 }
 
 void translate_args(Node *args, FILE *file) {
-    // Args: Exp COMMA Args | Exp
     assert(args != NULL);
     Node *exp = args->child;
-    translate_exp(exp, file);
-    if (exp->next != NULL) {
+
+    if (exp == NULL) return;
+
+    operand argOp = translate_exp(exp, file);
+    command argCmd = create_command(ARG, argOp, NULL_OP, NULL_OP, NULL_RELOP);
+    append_command_to_file(argCmd, file);
+
+    if (exp->next != NULL && strcmp(exp->next->name, "COMMA") == 0) {
         translate_args(exp->next->next, file);
     }
 }

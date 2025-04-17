@@ -10,7 +10,7 @@
 // 定义操作类型枚举
 typedef enum {
     LABEL,        // 定义标号
-    FUNCTION,     // 定义函数
+    FUNCTION_OP,  // 定义函数
     ASSIGN,       // 赋值操作
     ADD,          // 加法操作
     SUB,          // 减法操作

@@ -229,3 +229,24 @@ int calculateFieldOffset(FieldList field, const char* name) {
     }
     return -1; // 未找到字段
 }
+
+int calculateStructSizeByName(const char* name) {
+    RBNode var = search(name, false);
+    Type type = var->symbol->type;
+
+    RBNode structVar = search(itoa(type->u.basic), true);
+    if (structVar == NULL) assert(0);
+    
+    return calculateTypeSize(structVar->symbol->type);
+}
+
+
+relop str2relop(const char* str) {
+    if (strcmp(str, "<") == 0) return LT;
+    if (strcmp(str, "<=") == 0) return LE;
+    if (strcmp(str, ">") == 0) return GT;
+    if (strcmp(str, ">=") == 0) return GE;
+    if (strcmp(str, "==") == 0) return EQ;
+    if (strcmp(str, "!=") == 0) return NE;
+    return -1; // 未知关系运算符
+}

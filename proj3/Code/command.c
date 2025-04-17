@@ -1,7 +1,8 @@
 #include "command.h"
 #include <stdio.h>
-
 unsigned labelTag = 0;
+unsigned tempTag = 0;
+
 
 command create_command(op_type op, operand arg1, operand arg2, operand result, relop rel) {
     command cmd = (command)malloc(sizeof(command));
@@ -42,8 +43,8 @@ operand create_operand(int value, char* name, int kind, int type) {
             op->tag = labelTag++;
             break;
         case TEMP:
-            op->name = strdup(name);
-            op->tag = 0;
+            op->name = "temp"
+            op->tag = tempTag++;
             break;
         default:
             fprintf(stderr, "Unknown operand kind\n");
@@ -78,7 +79,7 @@ char* command_to_string(command cmd) {
         case LABEL:
             snprintf(str, 256, "LABEL %s%d", cmd->result->name, cmd->result->tag);
             break;
-        case FUNCTION:
+        case FUNCTION_OP:
             snprintf(str, 256, "FUNCTION %s", cmd->result->name);
             break;
         case ASSIGN:
@@ -121,7 +122,7 @@ char* command_to_string(command cmd) {
             snprintf(str, 256, "ARG %d", cmd->arg1);
             break;
         case CALL:
-            snprintf(str, 256, "%d := CALL %d", cmd->result, cmd->arg1);
+            snprintf(str, 256, "%s := CALL %s", cmd->result->name, cmd->arg1->name);
             break;
         case PARAM:
             snprintf(str, 256, "PARAM %s", cmd->result->name);

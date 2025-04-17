@@ -2,7 +2,7 @@
 #define __HELPER_H
 
 #include "rb_tree.h"
-
+#include "command.h"
 
 /* ================ Struct Compare ================ */
 int compareStructTypes(Type t1, Type t2);
@@ -21,5 +21,9 @@ FieldList searchFieldList(FieldList fl, const char* name);
 /* ================ Size and Offset ================ */
 int calculateTypeSize(Type type);
 int calculateFieldOffset(FieldList field, const char* name);
+int calculateStructSizeByName(const char* name);
+
+/* ================ Relation Op ================= */
+relop str2relop(const char* str);
 
 #endif // __HELPER_H
