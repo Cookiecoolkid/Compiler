@@ -21,7 +21,7 @@ FieldList searchFieldList(FieldList fl, const char* name);
 /* ================ Size and Offset ================ */
 int calculateTypeSize(Type type);
 int calculateFieldOffset(FieldList field, const char* name);
-int calculateStructSizeByName(const char* name);
+int calculateStructSizeByName(char* name);
 
 /* ================ Relation Op ================= */
 relop str2relop(const char* str);

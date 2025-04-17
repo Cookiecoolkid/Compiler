@@ -1,6 +1,9 @@
 #ifndef __COMMAND_H
 #define __COMMAND_H
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #define NULL_VALUE 0
 #define NULL_NAME NULL
 #define NULL_OP NULL
@@ -15,13 +18,13 @@ typedef enum {
     ADD,          // 加法操作
     SUB,          // 减法操作
     MUL,          // 乘法操作
-    DIV,          // 除法操作
+    DIV_OP,          // 除法操作
     ADDR,         // 取地址操作
     DEREF,        // 取内存单元内容操作
     STORE,        // 存储操作
     GOTO,         // 无条件跳转
     COND_GOTO,    // 条件跳转
-    RETURN,       // 返回操作
+    RETURN_OP,       // 返回操作
     DEC,          // 内存空间申请
     ARG,          // 传实参
     CALL,         // 函数调用

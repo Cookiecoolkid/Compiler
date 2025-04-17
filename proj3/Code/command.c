@@ -1,5 +1,10 @@
 #include "command.h"
+#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+char* strdup(const char* s);
+
 unsigned labelTag = 0;
 unsigned tempTag = 0;
 
@@ -43,7 +48,7 @@ operand create_operand(int value, char* name, int kind, int type) {
             op->tag = labelTag++;
             break;
         case TEMP:
-            op->name = "temp"
+            op->name = "temp";
             op->tag = tempTag++;
             break;
         default:
@@ -83,43 +88,52 @@ char* command_to_string(command cmd) {
             snprintf(str, 256, "FUNCTION %s", cmd->result->name);
             break;
         case ASSIGN:
-            snprintf(str, 256, "%d := %d", cmd->result, cmd->arg1);
+            if (cmd->result->type == ADDRESS) {
+                snprintf(str, 256, "*%s := %s", cmd->result->name, cmd->arg1->name);
+            } else {
+                snprintf(str, 256, "%s := %s", cmd->result->name, cmd->arg1->name);
+            }
             break;
         case ADD:
-            snprintf(str, 256, "%d := %d + %d", cmd->result, cmd->arg1, cmd->arg2);
+            snprintf(str, 256, "%s := %s + %s", cmd->result->name, cmd->arg1->name, cmd->arg2->name);
             break;
         case SUB:
-            snprintf(str, 256, "%d := %d - %d", cmd->result, cmd->arg1, cmd->arg2);
+            snprintf(str, 256, "%s := %s - %s", cmd->result->name, cmd->arg1->name, cmd->arg2->name);
             break;
         case MUL:
-            snprintf(str, 256, "%d := %d * %d", cmd->result, cmd->arg1, cmd->arg2);
+            snprintf(str, 256, "%s := %s * %s", cmd->result->name, cmd->arg1->name, cmd->arg2->name);
             break;
-        case DIV:
-            snprintf(str, 256, "%d := %d / %d", cmd->result, cmd->arg1, cmd->arg2);
+        case DIV_OP:
+            snprintf(str, 256, "%s := %s / %s", cmd->result->name, cmd->arg1->name, cmd->arg2->name);
             break;
         case ADDR:
-            snprintf(str, 256, "%d := &%d", cmd->result, cmd->arg1);
+            snprintf(str, 256, "%s := &%s", cmd->result->name, cmd->arg1->name);
             break;
         case DEREF:
-            snprintf(str, 256, "%d := *%d", cmd->result, cmd->arg1);
+            snprintf(str, 256, "%s := *%s", cmd->result->name, cmd->arg1->name);
             break;
         case STORE:
-            snprintf(str, 256, "*%d := %d", cmd->arg1, cmd->arg2);
+            snprintf(str, 256, "*%s := %s", cmd->arg1->name, cmd->arg2->name);
             break;
         case GOTO:
             snprintf(str, 256, "GOTO %s%d", cmd->result->name, cmd->result->tag);
             break;
         case COND_GOTO:
-            snprintf(str, 256, "IF %s %s %s GOTO %s%d", cmd->arg1->name, rel_strings[cmd->rel], cmd->arg2->name, cmd->result->name, cmd->result->tag);
+            snprintf(str, 256, "IF %s %s %s GOTO %s%d", 
+                    cmd->arg1->name, 
+                    rel_strings[cmd->rel], 
+                    cmd->arg2->name, 
+                    cmd->result->name, 
+                    cmd->result->tag);
             break;
-        case RETURN:
-            snprintf(str, 256, "RETURN %d", cmd->result);
+        case RETURN_OP:
+            snprintf(str, 256, "RETURN %s", cmd->result->name);
             break;
         case DEC:
             snprintf(str, 256, "DEC %s %d", cmd->result->name, cmd->result->value);
             break;
         case ARG:
-            snprintf(str, 256, "ARG %d", cmd->arg1);
+            snprintf(str, 256, "ARG %s", cmd->arg1->name);
             break;
         case CALL:
             snprintf(str, 256, "%s := CALL %s", cmd->result->name, cmd->arg1->name);
@@ -128,10 +142,10 @@ char* command_to_string(command cmd) {
             snprintf(str, 256, "PARAM %s", cmd->result->name);
             break;
         case READ:
-            snprintf(str, 256, "READ %d", cmd->result);
+            snprintf(str, 256, "READ %s", cmd->result->name);
             break;
         case WRITE:
-            snprintf(str, 256, "WRITE %d", cmd->arg1);
+            snprintf(str, 256, "WRITE %s", cmd->arg1->name);
             break;
         default:
             snprintf(str, 256, "UNKNOWN OP");

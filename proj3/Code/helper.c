@@ -1,6 +1,7 @@
 #include "rb_tree.h"
 #include "helper.h"
 #include <assert.h>
+#include <stdlib.h>
 
 // 比较两个结构体类型是否一致（成员顺序无关）
 int compareStructTypes(Type t1, Type t2) {
@@ -230,11 +231,12 @@ int calculateFieldOffset(FieldList field, const char* name) {
     return -1; // 未找到字段
 }
 
-int calculateStructSizeByName(const char* name) {
+int calculateStructSizeByName(char* name) {
     RBNode var = search(name, false);
     Type type = var->symbol->type;
-
-    RBNode structVar = search(itoa(type->u.basic), true);
+    char structName[256];  
+    snprintf(structName, sizeof(structName), "%d", type->u.basic); 
+    RBNode structVar = search(structName, true);
     if (structVar == NULL) assert(0);
     
     return calculateTypeSize(structVar->symbol->type);

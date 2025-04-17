@@ -3,7 +3,8 @@
 
 #include "command.h"
 #include "rb_tree.h"
-
+#include "node.h"
+#include "helper.h"
 
 void translate_program(Node *root, FILE *file);
 void translate_extDefList(Node *extDefList, FILE *file);
