@@ -4,7 +4,7 @@ import gdb
 
 def setup_debug():
     # 设置断点并运行程序
-    gdb.execute('b translate_compSt')
+    gdb.execute('b /home/cookiecoolkid/Compiler/proj3/Code/translate.c:689')
     gdb.execute('run ../Test/test3.cmm ../Output/test3.ir')
     gdb.execute('layout src')
     gdb.execute('set pagination off')

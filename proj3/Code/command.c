@@ -123,11 +123,7 @@ char* command_to_string(command cmd) {
             snprintf(str, 256, "\nFUNCTION %s :", cmd->result->name);
             break;
         case ASSIGN:
-            if (cmd->result->type == ADDRESS) {
-                snprintf(str, 256, "*%s := %s", cmd->result->name, cmd->arg1->name);
-            } else {
-                snprintf(str, 256, "%s := %s", cmd->result->name, cmd->arg1->name);
-            }
+            snprintf(str, 256, "%s := %s", cmd->result->name, cmd->arg1->name);
             break;
         case ADD:
             snprintf(str, 256, "%s := %s + %s", cmd->result->name, cmd->arg1->name, cmd->arg2->name);

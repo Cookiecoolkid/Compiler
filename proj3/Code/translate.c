@@ -142,6 +142,7 @@ void translate_compSt(Node *compSt, FILE *file, Type funcType) {
         FieldList params = funcType->u.function.params;
         while (params != NULL) {
             Symbol symbol = createSymbol(params->name, params->type);
+            symbol->isParam = true;
             insert(symbol);
             params = params->tail;
         }
@@ -543,7 +544,19 @@ operand translate_exp(Node *exp, FILE *file) {
                 if (structVar == NULL) assert(0); 
                 
                 int size_ = calculateTypeSize(structVar->symbol->type);
-                return create_operand(size_, child->value.value.str_val, VARIABLE, ADDRESS);
+                operand structOp = create_operand(size_, child->value.value.str_val, VARIABLE, ADDRESS);
+
+                // 检查是否是函数参数
+                if (var->symbol->isParam) {
+                    // 函数参数中的结构体/数组变量已经是ADDR类型
+                    return structOp;
+                } else {
+                    // 普通结构体变量需要取地址
+                    operand addrOp = create_operand(NULL_VALUE, NULL_NAME, TEMP, ADDRESS);
+                    command addrCmd = create_command(ADDR, structOp, NULL_OP, addrOp, NULL_RELOP);
+                    append_command_to_file(addrCmd, file);
+                    return addrOp;
+                }
             }
         }
     }
@@ -572,8 +585,15 @@ operand translate_exp(Node *exp, FILE *file) {
             Node *exp2 = child->next->next;
             operand lhs = translate_exp(exp1, file);
             operand rhs = translate_exp(exp2, file);
-            command assignCmd = create_command(ASSIGN, rhs, NULL_OP, lhs, NULL_RELOP);
-            append_command_to_file(assignCmd, file);
+
+            // 如果左边是结构体成员，使用STORE命令
+            if (exp1->child->next != NULL && strcmp(exp1->child->next->name, "DOT") == 0) {
+                command storeCmd = create_command(STORE, lhs, rhs, NULL_OP, NULL_RELOP);
+                append_command_to_file(storeCmd, file);
+            } else {
+                command assignCmd = create_command(ASSIGN, rhs, NULL_OP, lhs, NULL_RELOP);
+                append_command_to_file(assignCmd, file);
+            }
             return lhs;
         } 
         if ((strcmp(secondChild->name, "PLUS") == 0) || (strcmp(secondChild->name, "MINUS") == 0) ||
@@ -683,17 +703,40 @@ operand translate_exp(Node *exp, FILE *file) {
             char *fieldName = idNode->value.value.str_val;
             operand structOp = translate_exp(child, file);
 
+            // 如果structOp是VAL类型，需要先取地址
+            if (structOp->type == VAL) {
+                operand tempAddr = create_operand(NULL_VALUE, NULL_NAME, TEMP, ADDRESS);
+                command addrCmd = create_command(ADDR, structOp, NULL_OP, tempAddr, NULL_RELOP);
+                append_command_to_file(addrCmd, file);
+                structOp = tempAddr;
+            }
+
             Type type = check_exp(child);
-            FieldList members = type->u.structure.struct_members;
+            char structName[256];
+            snprintf(structName, sizeof(structName), "%d", type->u.basic);
+            RBNode structNode = search(structName, true);
+            assert(structNode != NULL && structNode->symbol->type->kind == STRUCTURE);
+            FieldList members = structNode->symbol->type->u.structure.struct_members;
 
             int offset = calculateFieldOffset(members, fieldName);
-            operand temp = create_operand(NULL_VALUE, NULL_NAME, TEMP, VAL);
+            // ADDRESS + CONSTANT = ADDRESS
+            operand temp = create_operand(NULL_VALUE, NULL_NAME, TEMP, ADDRESS);
             char *constantName = (char*)malloc(10 * sizeof(char));
             snprintf(constantName, 10, "#%d", offset);
             operand offsetOp = create_operand(offset, constantName, CONSTANT, VAL);
             command addCmd = create_command(ADD, structOp, offsetOp, temp, NULL_RELOP);
             append_command_to_file(addCmd, file);
-            return structOp;
+
+            // 如果是赋值语句的左边，直接返回地址
+            if (exp->next != NULL && strcmp(exp->next->name, "ASSIGNOP") == 0) {
+                return temp;
+            }
+            
+            // 否则需要取操作数
+            operand derefOp = create_operand(NULL_VALUE, NULL_NAME, TEMP, VAL);
+            command derefCmd = create_command(DEREF, temp, NULL_OP, derefOp, NULL_RELOP);
+            append_command_to_file(derefCmd, file);
+            return derefOp;
         }
         if (strcmp(secondChild->name, "LB") == 0) {
             // Exp LB Exp RB

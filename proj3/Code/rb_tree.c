@@ -378,6 +378,7 @@ Symbol createSymbol(const char* name, Type type) {
     Symbol newSymbol = (Symbol)malloc(sizeof(struct Symbol_));
     newSymbol->name = strdup(name);
     newSymbol->type = type;
+    newSymbol->isParam = false;  // 默认不是函数参数
     return newSymbol;
 }
 

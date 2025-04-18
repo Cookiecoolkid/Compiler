@@ -30,6 +30,7 @@ typedef unsigned int struct_t;
 struct Symbol_ {
     char* name;
     Type type;
+    bool isParam;  // 是否是函数参数
 };
 
 // 定义类型结构体
