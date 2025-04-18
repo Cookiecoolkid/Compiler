@@ -88,7 +88,7 @@ void translate_extDecList(Node *extDecList, FILE *file, Type type) {
     //            | VarDec COMMA ExtDecList
     assert(extDecList != NULL);
     Node *varDec = extDecList->child;
-    translate_varDec(varDec, file, type, false);
+    translate_varDec(varDec, file, type);
     if (varDec->next != NULL) {
         translate_extDecList(varDec->next->next, file, type);
     }
@@ -157,7 +157,7 @@ void translate_compSt(Node *compSt, FILE *file, Type funcType) {
     exitScope();
 }
 
-operand translate_varDec(Node *varDec, FILE *file, Type type, bool inRecursion) {
+operand translate_varDec(Node *varDec, FILE *file, Type type) {
     if (varDec == NULL) return NULL_OP;
     
     // 原有的代码生成逻辑
@@ -174,22 +174,30 @@ operand translate_varDec(Node *varDec, FILE *file, Type type, bool inRecursion) 
         Symbol symbol = createSymbol(varName, type);
         insert(symbol);
 
-        assert(type->kind == BASIC);
+        assert(type->kind == BASIC || type->kind == ARRAY);
         operand op;
-        if (type->u.basic <= 1) {
-            // INT/FLOAT VARIABLE
-            // Only struct & function output DEC command
-            op = create_operand(INT_FLOAT_SIZE, varName, VARIABLE, VAL);
+        if (type->kind == BASIC) {
+            if (type->u.basic <= 1) {
+                // INT/FLOAT VARIABLE
+                // Only struct & function output DEC command
+                op = create_operand(INT_FLOAT_SIZE, varName, VARIABLE, VAL);
+            } else {
+                // Struct
+                char structName[256];
+                snprintf(structName, sizeof(structName), "%d", type->u.basic);
+                RBNode structVar = search(structName, true);
+                if (structVar == NULL) assert(0);
+                int size_ = calculateTypeSize(structVar->symbol->type);
+                op = create_operand(size_, varName, VARIABLE, VAL);
+                command structCmd = create_command(DEC, NULL_OP, NULL_OP, op, NULL_RELOP);
+                append_command_to_file(structCmd, file);
+            }
         } else {
-            // Struct
-            char structName[256];
-            snprintf(structName, sizeof(structName), "%d", type->u.basic);
-            RBNode structVar = search(structName, true);
-            if (structVar == NULL) assert(0);
-            int size_ = calculateTypeSize(structVar->symbol->type);
-            op = create_operand(size_, varName, VARIABLE, VAL);
-            command structCmd = create_command(DEC, NULL_OP, NULL_OP, op, NULL_RELOP);
-            append_command_to_file(structCmd, file);
+            // ARRAY type
+            int size_ = calculateTypeSize(type);
+            op = create_operand(size_, varName, VARIABLE, ADDRESS);
+            command arrayCmd = create_command(DEC, NULL_OP, NULL_OP, op, NULL_RELOP);
+            append_command_to_file(arrayCmd, file);
         }
         return op;
     }
@@ -198,13 +206,20 @@ operand translate_varDec(Node *varDec, FILE *file, Type type, bool inRecursion) 
     // VarDec LB INT RB
     assert(thirdNode != NULL);
     int size_ = thirdNode->value.value.int_val;
-    operand op = translate_varDec(varDec_child, file, type, true);
+    
+    // 创建数组类型
+    Type arrayType = (Type)malloc(sizeof(struct Type_));
+    arrayType->kind = ARRAY;
+    arrayType->u.array.elem = type;
+    arrayType->u.array.size = size_;
+    
+    operand op = translate_varDec(varDec_child, file, arrayType);
     operand res_op = op;
     res_op->value = size_ * op->value;
-    if (!inRecursion) {
-        command decCmd = create_command(DEC, NULL_OP, NULL_OP, op, NULL_RELOP);
-        append_command_to_file(decCmd, file);
-    }
+    // if (!inRecursion) {
+    //     command decCmd = create_command(DEC, NULL_OP, NULL_OP, op, NULL_RELOP);
+    //     append_command_to_file(decCmd, file);
+    // }
 
     return res_op;
 }
@@ -287,12 +302,12 @@ void translate_dec(Node *dec, FILE *file, Type type) {
     Node *varDec = dec->child;
     if (varDec->next == NULL) {
         // VarDec
-        translate_varDec(varDec, file, type, false);
+        translate_varDec(varDec, file, type);
         return;
     }
     // VarDec ASSIGNOP Exp
     Node *exp = varDec->next->next;
-    operand res = translate_varDec(varDec, file, type, false);
+    operand res = translate_varDec(varDec, file, type);
     operand expOp = translate_exp(exp, file);
     command assignCmd = create_command(ASSIGN, expOp, NULL_OP, res, NULL_RELOP);
     append_command_to_file(assignCmd, file);
@@ -531,32 +546,50 @@ operand translate_exp(Node *exp, FILE *file) {
             if (var == NULL) assert(0);
             
             Type type = var->symbol->type;
-            assert(type->kind == BASIC);
+            if (type->kind == BASIC) {
+                if (type->u.basic <= 1) {
+                    // INT/FLOAT 变量
+                    return create_operand(INT_FLOAT_SIZE, name, VARIABLE, VAL);
+                } else {
+                    // 结构体
+                    char structName[256];
+                    snprintf(structName, sizeof(structName), "%d", type->u.basic);
+                    RBNode structVar = search(structName, true);
+                    if (structVar == NULL) assert(0); 
+                    
+                    int size_ = calculateTypeSize(structVar->symbol->type);
+                    operand structOp = create_operand(size_, child->value.value.str_val, VARIABLE, ADDRESS);
 
-            if (type->u.basic <= 1) {
-                // INT/FLOAT 变量
-                return create_operand(INT_FLOAT_SIZE, name, VARIABLE, VAL);
-            } else {
-                // 结构体
-                char structName[256];
-                snprintf(structName, sizeof(structName), "%d", type->u.basic);
-                RBNode structVar = search(structName, true);
-                if (structVar == NULL) assert(0); 
-                
-                int size_ = calculateTypeSize(structVar->symbol->type);
-                operand structOp = create_operand(size_, child->value.value.str_val, VARIABLE, ADDRESS);
+                    // 检查是否是函数参数
+                    if (var->symbol->isParam) {
+                        // 函数参数中的结构体/数组变量已经是ADDR类型
+                        return structOp;
+                    } else {
+                        // 普通结构体变量需要取地址
+                        operand addrOp = create_operand(NULL_VALUE, NULL_NAME, TEMP, ADDRESS);
+                        command addrCmd = create_command(ADDR, structOp, NULL_OP, addrOp, NULL_RELOP);
+                        append_command_to_file(addrCmd, file);
+                        return addrOp;
+                    }
+                }
+            } else if (type->kind == ARRAY) {
+                // 数组类型
+                int size_ = calculateTypeSize(type);
+                operand arrayOp = create_operand(size_, name, VARIABLE, ADDRESS);
 
                 // 检查是否是函数参数
                 if (var->symbol->isParam) {
-                    // 函数参数中的结构体/数组变量已经是ADDR类型
-                    return structOp;
+                    // 函数参数中的数组变量已经是ADDR类型
+                    return arrayOp;
                 } else {
-                    // 普通结构体变量需要取地址
+                    // 普通数组变量需要取地址
                     operand addrOp = create_operand(NULL_VALUE, NULL_NAME, TEMP, ADDRESS);
-                    command addrCmd = create_command(ADDR, structOp, NULL_OP, addrOp, NULL_RELOP);
+                    command addrCmd = create_command(ADDR, arrayOp, NULL_OP, addrOp, NULL_RELOP);
                     append_command_to_file(addrCmd, file);
                     return addrOp;
                 }
+            } else {
+                assert(0); // 不应该有其他类型
             }
         }
     }
@@ -586,11 +619,15 @@ operand translate_exp(Node *exp, FILE *file) {
             operand lhs = translate_exp(exp1, file);
             operand rhs = translate_exp(exp2, file);
 
-            // 如果左边是结构体成员，使用STORE命令
-            if (exp1->child->next != NULL && strcmp(exp1->child->next->name, "DOT") == 0) {
+            // 检查左边是否是数组访问或结构体成员访问
+            if (exp1->child->next != NULL && 
+                (strcmp(exp1->child->next->name, "DOT") == 0 || 
+                 strcmp(exp1->child->next->name, "LB") == 0)) {
+                // 数组访问或结构体成员访问，使用STORE命令
                 command storeCmd = create_command(STORE, lhs, rhs, NULL_OP, NULL_RELOP);
                 append_command_to_file(storeCmd, file);
             } else {
+                // 普通变量赋值
                 command assignCmd = create_command(ASSIGN, rhs, NULL_OP, lhs, NULL_RELOP);
                 append_command_to_file(assignCmd, file);
             }
@@ -747,9 +784,8 @@ operand translate_exp(Node *exp, FILE *file) {
             
             // 获取数组类型信息
             Type arrayType = check_exp(exp1);
-            if (arrayType->kind != ARRAY) {
-                assert(0); // 语义检查应该已经确保这是数组类型
-            }
+            // 最后一维的基本元素是 BASIC
+            assert(arrayType->kind == ARRAY || arrayType->kind == BASIC);
             
             // 计算元素大小
             int elemSize = calculateTypeSize(arrayType->u.array.elem);
@@ -759,23 +795,32 @@ operand translate_exp(Node *exp, FILE *file) {
             snprintf(constantName, 10, "#%d", elemSize);
             operand offsetOp = create_operand(elemSize, constantName, CONSTANT, VAL);
             operand temp1 = create_operand(NULL_VALUE, NULL_NAME, TEMP, VAL);
-            command mulCmd = create_command(MUL, temp1, indexOp, offsetOp, NULL_RELOP);
+            command mulCmd = create_command(MUL, indexOp, offsetOp, temp1, NULL_RELOP);
             append_command_to_file(mulCmd, file);
             
             // 计算最终地址
-            operand temp2 = create_operand(NULL_VALUE, NULL_NAME, TEMP, VAL);
-            command addCmd = create_command(ADD, temp2, baseOp, temp1, NULL_RELOP);
+            operand temp2 = create_operand(NULL_VALUE, NULL_NAME, TEMP, ADDRESS);
+            command addCmd = create_command(ADD, temp1, baseOp, temp2, NULL_RELOP);
             append_command_to_file(addCmd, file);
+            
+            // 检查是否在赋值语句的左边
+            bool isLValue = (exp->next != NULL && strcmp(exp->next->name, "ASSIGNOP") == 0);
             
             // 如果是多维数组，递归处理
             if (arrayType->u.array.elem->kind == ARRAY) {
                 return temp2;
             } else {
-                // 对于最后一维，返回地址
-                operand result = create_operand(NULL_VALUE, NULL_NAME, TEMP, ADDRESS);
-                command assignCmd = create_command(ASSIGN, result, temp2, NULL_OP, NULL_RELOP);
-                append_command_to_file(assignCmd, file);
-                return result;
+                // 最后一维
+                if (isLValue) {
+                    // 在赋值左边，返回地址用于STORE
+                    return temp2;
+                } else {
+                    // 在赋值右边，需要取数值
+                    operand result = create_operand(NULL_VALUE, NULL_NAME, TEMP, VAL);
+                    command derefCmd = create_command(DEREF, temp2, NULL_OP, result, NULL_RELOP);
+                    append_command_to_file(derefCmd, file);
+                    return result;
+                }
             }
         }
     }
