@@ -14,7 +14,7 @@ void translate_extDecList(Node *extDecList, FILE *file, Type type);
 void translate_funDec(Node *funDec, FILE *file);
 void translate_compSt(Node *compSt, FILE *file, Type funcType);
 operand translate_varDec(Node *varDec, FILE *file, Type type, bool inRecursion);
-// void translate_structSpecifier(Node *structSpecifier, FILE *file);
+Type translate_structSpecifier(Node *structSpecifier, FILE *file);
 void translate_optTag(Node *optTag, FILE *file);
 void translate_tag(Node *tag, FILE *file);
 void translate_defList(Node *defList, FILE *file);

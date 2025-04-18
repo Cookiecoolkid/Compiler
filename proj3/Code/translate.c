@@ -77,7 +77,9 @@ Type translate_specifier(Node *specifier, FILE *file) {
     } else {
         // StructSpecifier
         // Return Basic or Structure type
-        return NULL;
+        // Already insert struct define member in semantic.c so return NULL means do nothing
+        // Only return type when it is a struct local/global variable, return its BASIC type
+        return translate_structSpecifier(child, file);
     }
 }
 
@@ -161,6 +163,9 @@ operand translate_varDec(Node *varDec, FILE *file, Type type, bool inRecursion) 
     Node *idNode = varDec->child;
     if (idNode->next == NULL) {
         // ID
+        // Struct Define, do nothing
+        if (type == NULL) return NULL_OP;
+
         // 获取变量名
         char* varName = varDec->child->value.value.str_val;
         
@@ -203,25 +208,29 @@ operand translate_varDec(Node *varDec, FILE *file, Type type, bool inRecursion) 
     return res_op;
 }
 
-// void translate_structSpecifier(Node *structSpecifier, FILE *file) {
-//     // StructSpecifier: STRUCT OptTag LC DefList RC | STRUCT Tag
+Type translate_structSpecifier(Node *structSpecifier, FILE *file) {
+    // StructSpecifier: STRUCT OptTag LC DefList RC | STRUCT Tag
     
-//     // Do Nothing
-//     assert(structSpecifier != NULL);
-//     Node *child = structSpecifier->child;
-//     Node *secondChild = child->next;
-//     if (secondChild->next == NULL) {
-//         // STRUCT Tag
-//         translate_tag(secondChild, file);
-//     } else {
-//         // STRUCT OptTag LC DefList RC
-//         Node *optTag = secondChild;
-//         Node *defList = optTag->next->next;
-//         translate_optTag(optTag, file);
+    // Only return type when it is a struct local/global variable, return its BASIC type, otherwise NULL.
+    // Do Nothing
+    assert(structSpecifier != NULL);
+    int childNum = get_child_num(structSpecifier);
+    if (childNum != 2) return NULL;
+    Node *TagNode = structSpecifier->child->next;
+    assert(strcmp(TagNode->name, "Tag") == 0);
+    // Tag -> ID
+    Node *idNode = TagNode->child;
+    assert(idNode != NULL);
+    char *structName = idNode->value.value.str_val;
+    RBNode result = search(structName, true);
+    assert(result != NULL);
+    int structID = result->symbol->type->u.structure.ID;
+    Type type = (Type)malloc(sizeof(struct Type_));
+    type->kind = BASIC;
+    type->u.basic = structID;
 
-//         translate_defList(defList, file);
-//     }
-// }
+    return type;
+}
 
 void translate_optTag(Node *optTag, FILE *file) {
     // OptTag: ID | empty
