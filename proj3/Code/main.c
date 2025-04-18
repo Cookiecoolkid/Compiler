@@ -36,6 +36,7 @@ int main(int argc, char **argv) {
     translate_program(root, file);
   }
 
+  fclose(file);
   free_tree(root);
   return 0;
 }

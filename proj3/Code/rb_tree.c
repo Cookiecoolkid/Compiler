@@ -8,6 +8,24 @@ char* strdup(const char* s);
 SymbolTable symTable;
 struct_t structID;
 
+// 函数声明
+ScopeRBNode* createScope();
+RBNode createRBNode(Symbol symbol);
+void updateRoot(RBNode node);
+void leftRotate(RBNode node);
+void rightRotate(RBNode node);
+void fixViolation(RBNode node);
+void printTree(RBNode node);
+void printScopeChain();
+
+// 添加辅助函数的声明
+Symbol createSymbol(const char* name, Type type);
+FieldList createFieldList(const char* name, Type type);
+Type createBasicType(int basicType);
+Type createArrayType(Type elem, int size);
+Type createStructType(FieldList struct_members);
+Type createFunctionType(FieldList params, Type retType, int paramNum);
+
 // 创建新作用域
 ScopeRBNode* createScope() {
     ScopeRBNode* newScope = (ScopeRBNode*)malloc(sizeof(ScopeRBNode));
@@ -313,9 +331,26 @@ void printScopeChain() {
 
 // 初始化符号表
 void initSymbolTable() {
+    // 初始化全局符号表
     symTable.currentScope = createScope();
     symTable.globalStructRoot = NULL;
     symTable.globalFuncRoot = NULL;
+
+    // 添加预定义的read函数
+    Type readRetType = createBasicType(INT_);
+    Type readFuncType = createFunctionType(NULL, readRetType, 0);
+    readFuncType->u.function.defined = 1;
+    Symbol readSymbol = createSymbol("read", readFuncType);
+    insert(readSymbol);
+
+    // 添加预定义的write函数
+    Type writeParamType = createBasicType(INT_);
+    FieldList writeParam = createFieldList("write_param", writeParamType);
+    Type writeRetType = createBasicType(INT_);
+    Type writeFuncType = createFunctionType(writeParam, writeRetType, 1);
+    writeFuncType->u.function.defined = 1;
+    Symbol writeSymbol = createSymbol("write", writeFuncType);
+    insert(writeSymbol);
 
     structID = BASIC_TYPE_NUM; // 从 2 开始, 0 和 1 分别表示 INT 和 FLOAT
 }

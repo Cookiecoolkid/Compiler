@@ -213,9 +213,10 @@ CompSt: LC DefList StmtList RC {
     $$ = create_node("CompSt", @1.first_line, VALUE_OTHER);
     link_nodes($$, $1, $2, $3, $4, NULL);
 }
+/*
 | LC error StmtList RC {
-    /*yyerror("CompSt syntax error");*/
 };
+*/
 
 /* ------------------------- StmtList ---------------------------*/
 

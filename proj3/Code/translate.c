@@ -4,6 +4,7 @@
 #include "rb_tree.h"
 #include "command.h"
 #include <assert.h>
+#include <stdio.h>
 
 // 全局符号表实例，在语义检查的时候已经得到函数定义与结构体定义
 extern SymbolTable symTable;
@@ -39,42 +40,55 @@ void translate_extDef(Node *extDef, FILE *file) {
     assert(extDef != NULL);
     Node *specifier = extDef->child;
     Node *secondChild = specifier->next;
-    translate_specifier(specifier, file);
+    Type type = translate_specifier(specifier, file);
     if (secondChild->next == NULL) {
         // Specifier SEMI
         return;
     }
     Node *thirdChild = secondChild->next;
     if (strcmp(secondChild->name, "ExtDecList") == 0) {
-        translate_extDecList(secondChild, file);
+        translate_extDecList(secondChild, file, type);
     } else if (strcmp(thirdChild->name, "CompSt") == 0) {
         translate_funDec(secondChild, file);
-        translate_compSt(thirdChild, file);
+        Type funcType = search(secondChild->child->value.value.str_val, true)->symbol->type;
+        translate_compSt(thirdChild, file, funcType);
     } else {
         translate_funDec(secondChild, file);
     }
 }
 
-void translate_specifier(Node *specifier, FILE *file) {
+Type translate_specifier(Node *specifier, FILE *file) {
     // Specifier: TYPE | StructSpecifier
     assert(specifier != NULL);
     Node *child = specifier->child;
     if (strcmp(child->name, "TYPE") == 0) {
         // Basic type
+        Type type = (Type)malloc(sizeof(struct Type_));
+        type->kind = BASIC;
+        char *typeName = child->value.value.str_val;
+        if (strcmp(typeName, "int") == 0) {
+            type->u.basic = INT_;
+        } else if (strcmp(typeName, "float") == 0){
+            type->u.basic = FLOAT_;
+        } else {
+            assert(0);
+        }
+        return type;
     } else {
         // StructSpecifier
-        translate_structSpecifier(child, file);
+        // Return Basic or Structure type
+        return NULL;
     }
 }
 
-void translate_extDecList(Node *extDecList, FILE *file) {
+void translate_extDecList(Node *extDecList, FILE *file, Type type) {
     // ExtDecList: VarDec
     //            | VarDec COMMA ExtDecList
     assert(extDecList != NULL);
     Node *varDec = extDecList->child;
-    translate_varDec(varDec, file, false);
+    translate_varDec(varDec, file, type, false);
     if (varDec->next != NULL) {
-        translate_extDecList(varDec->next->next, file);
+        translate_extDecList(varDec->next->next, file, type);
     }
 }
 
@@ -85,14 +99,6 @@ void translate_funDec(Node *funDec, FILE *file) {
     Node *thirdNode = idNode->next->next;
 
     char *funcName = idNode->value.value.str_val;
-
-    if (strcmp(funcName, "READ") == 0) {
-        // TODO
-    }
-
-    if (strcmp(funcName, "WRITE") == 0) {
-        // TODO
-    }
 
     operand funcOp = create_operand(NULL_VALUE, funcName, FUNCTION_NAME, VAL);
     command funcCmd = create_command(FUNCTION_OP, NULL_OP, NULL_OP, funcOp, NULL_RELOP);
@@ -122,31 +128,52 @@ void translate_funDec(Node *funDec, FILE *file) {
     }
 }
 
-void translate_compSt(Node *compSt, FILE *file) {
+void translate_compSt(Node *compSt, FILE *file, Type funcType) {
     // CompSt: LC DefList StmtList RC
     assert(compSt != NULL);
+
+    // 进入新的作用域
+    enterScope();
+
+    if (funcType != NULL && funcType->kind == FUNCTION) {
+        // Insert parameters into symbol table
+        FieldList params = funcType->u.function.params;
+        while (params != NULL) {
+            Symbol symbol = createSymbol(params->name, params->type);
+            insert(symbol);
+            params = params->tail;
+        }
+    }
+
     Node *defList = compSt->child->next;
     Node *stmtList = defList->next;
     translate_defList(defList, file);
-    translate_stmtList(stmtList, file);
+    translate_stmtList(stmtList, file, funcType);
+
+    // 退出当前作用域
+    exitScope();
 }
 
-operand translate_varDec(Node *varDec, FILE *file, bool inRecursion) {
-    // VarDec: ID | VarDec LB INT RB 
-    assert(varDec != NULL);
+operand translate_varDec(Node *varDec, FILE *file, Type type, bool inRecursion) {
+    if (varDec == NULL) return NULL_OP;
+    
+    // 原有的代码生成逻辑
     Node *idNode = varDec->child;
     if (idNode->next == NULL) {
         // ID
-        char *name = idNode->value.value.str_val;
-        RBNode var = search(name, false);
-        if (var == NULL) assert(0);
-        Type type = var->symbol->type;
+        // 获取变量名
+        char* varName = varDec->child->value.value.str_val;
+        
+        // 插入符号表
+        Symbol symbol = createSymbol(varName, type);
+        insert(symbol);
+
         assert(type->kind == BASIC);
         operand op;
         if (type->u.basic <= 1) {
             // INT/FLOAT VARIABLE
             // Only struct & function output DEC command
-            op = create_operand(INT_FLOAT_SIZE, name, VARIABLE, VAL);
+            op = create_operand(INT_FLOAT_SIZE, varName, VARIABLE, VAL);
         } else {
             // Struct
             char structName[256];
@@ -154,7 +181,7 @@ operand translate_varDec(Node *varDec, FILE *file, bool inRecursion) {
             RBNode structVar = search(structName, true);
             if (structVar == NULL) assert(0);
             int size_ = calculateTypeSize(structVar->symbol->type);
-            op = create_operand(size_, name, VARIABLE, VAL);
+            op = create_operand(size_, varName, VARIABLE, VAL);
             command structCmd = create_command(DEC, NULL_OP, NULL_OP, op, NULL_RELOP);
             append_command_to_file(structCmd, file);
         }
@@ -165,7 +192,7 @@ operand translate_varDec(Node *varDec, FILE *file, bool inRecursion) {
     // VarDec LB INT RB
     assert(thirdNode != NULL);
     int size_ = thirdNode->value.value.int_val;
-    operand op = translate_varDec(varDec_child, file, true);
+    operand op = translate_varDec(varDec_child, file, type, true);
     operand res_op = op;
     res_op->value = size_ * op->value;
     if (!inRecursion) {
@@ -176,24 +203,25 @@ operand translate_varDec(Node *varDec, FILE *file, bool inRecursion) {
     return res_op;
 }
 
-void translate_structSpecifier(Node *structSpecifier, FILE *file) {
-    // StructSpecifier: STRUCT OptTag LC DefList RC | STRUCT Tag
+// void translate_structSpecifier(Node *structSpecifier, FILE *file) {
+//     // StructSpecifier: STRUCT OptTag LC DefList RC | STRUCT Tag
     
-    // Do Nothing
-    assert(structSpecifier != NULL);
-    Node *child = structSpecifier->child;
-    Node *secondChild = child->next;
-    if (secondChild->next == NULL) {
-        // STRUCT Tag
-        translate_tag(secondChild, file);
-    } else {
-        // STRUCT OptTag LC DefList RC
-        Node *optTag = secondChild;
-        Node *defList = optTag->next->next;
-        translate_optTag(optTag, file);
-        translate_defList(defList, file);
-    }
-}
+//     // Do Nothing
+//     assert(structSpecifier != NULL);
+//     Node *child = structSpecifier->child;
+//     Node *secondChild = child->next;
+//     if (secondChild->next == NULL) {
+//         // STRUCT Tag
+//         translate_tag(secondChild, file);
+//     } else {
+//         // STRUCT OptTag LC DefList RC
+//         Node *optTag = secondChild;
+//         Node *defList = optTag->next->next;
+//         translate_optTag(optTag, file);
+
+//         translate_defList(defList, file);
+//     }
+// }
 
 void translate_optTag(Node *optTag, FILE *file) {
     // OptTag: ID | empty
@@ -229,32 +257,32 @@ void translate_def(Node *def, FILE *file) {
     assert(def != NULL);
     Node *specifier = def->child;
     Node *decList = specifier->next;
-    translate_specifier(specifier, file);
-    translate_decList(decList, file);
+    Type type = translate_specifier(specifier, file);
+    translate_decList(decList, file, type);
 }
 
-void translate_decList(Node *decList, FILE *file) {
+void translate_decList(Node *decList, FILE *file, Type type) {
     // DecList: Dec | Dec COMMA DecList
     assert(decList != NULL);
     Node *dec = decList->child;
-    translate_dec(dec, file);
+    translate_dec(dec, file, type);
     if (dec->next != NULL) {
-        translate_decList(dec->next->next, file);
+        translate_decList(dec->next->next, file, type);
     }
 }
 
-void translate_dec(Node *dec, FILE *file) {
+void translate_dec(Node *dec, FILE *file, Type type) {
     // Dec: VarDec | VarDec ASSIGNOP Exp
     assert(dec != NULL);
     Node *varDec = dec->child;
     if (varDec->next == NULL) {
         // VarDec
-        translate_varDec(varDec, file, false);
+        translate_varDec(varDec, file, type, false);
         return;
     }
     // VarDec ASSIGNOP Exp
     Node *exp = varDec->next->next;
-    operand res = translate_varDec(varDec, file, false);
+    operand res = translate_varDec(varDec, file, type, false);
     operand expOp = translate_exp(exp, file);
     command assignCmd = create_command(ASSIGN, expOp, NULL_OP, res, NULL_RELOP);
     append_command_to_file(assignCmd, file);
@@ -282,7 +310,7 @@ void translate_dec(Node *dec, FILE *file) {
 //     append_command_to_file(paramCmd, file);
 // }
 
-void translate_stmtList(Node *stmtList, FILE *file) {
+void translate_stmtList(Node *stmtList, FILE *file, Type funcType) {
     // StmtList: Stmt StmtList | empty
     assert(stmtList != NULL);
     if (stmtList->child == NULL) return;
@@ -290,11 +318,11 @@ void translate_stmtList(Node *stmtList, FILE *file) {
     Node *stmt = stmtList->child;
     Node *nextStmtList = stmt->next;
 
-    translate_stmt(stmt, file);
-    translate_stmtList(nextStmtList, file);
+    translate_stmt(stmt, file, funcType);
+    translate_stmtList(nextStmtList, file, funcType);
 }
 
-void translate_stmt(Node *stmt, FILE *file) {
+void translate_stmt(Node *stmt, FILE *file, Type funcType) {
     // Stmt: Exp SEMI | CompSt | RETURN Exp SEMI | IF LP Exp RP Stmt
     //      | IF LP Exp RP Stmt ELSE Stmt | WHILE LP Exp RP Stmt
     assert(stmt != NULL);
@@ -305,7 +333,7 @@ void translate_stmt(Node *stmt, FILE *file) {
 
     } else if (strcmp(child->name, "CompSt") == 0) {
         // CompSt
-        translate_compSt(child, file);
+        translate_compSt(child, file, funcType);
 
     } else if (strcmp(child->name, "RETURN") == 0) {
         // RETURN Exp SEMI
@@ -320,36 +348,44 @@ void translate_stmt(Node *stmt, FILE *file) {
         if (stmt1->next != NULL && stmt1->next->next != NULL) {
             // IF LP Exp RP Stmt ELSE Stmt
             Node *stmt2 = stmt1->next->next;
-            operand label1 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
-            operand label2 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
-            operand label3 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+            operand label1 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
+            operand label2 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
+            operand label3 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
             translate_cond(exp, file, label1, label2);
 
             command label1Cmd = create_command(LABEL, NULL_OP, NULL_OP, label1, NULL_RELOP);
             append_command_to_file(label1Cmd, file);
 
-            translate_stmt(stmt1, file);
-            
-            command gotoCmd = create_command(GOTO, NULL_OP, NULL_OP, label3, NULL_RELOP);
-            append_command_to_file(gotoCmd, file);
+            translate_stmt(stmt1, file, funcType);
+
+            bool isElseReturn = false;
+            if (stmt2->child != NULL && strcmp(stmt2->child->name, "RETURN") == 0) {
+                isElseReturn = true;
+            }
+            if (!isElseReturn) {
+                command gotoCmd = create_command(GOTO, NULL_OP, NULL_OP, label3, NULL_RELOP);
+                append_command_to_file(gotoCmd, file);
+            }
 
             command label2Cmd = create_command(LABEL, NULL_OP, NULL_OP, label2, NULL_RELOP);
             append_command_to_file(label2Cmd, file);
 
-            translate_stmt(stmt2, file);
+            translate_stmt(stmt2, file, funcType);
 
-            command label3Cmd = create_command(LABEL, NULL_OP, NULL_OP, label3, NULL_RELOP);
-            append_command_to_file(label3Cmd, file);
+            if (!isElseReturn) {
+                command label3Cmd = create_command(LABEL, NULL_OP, NULL_OP, label3, NULL_RELOP);
+                append_command_to_file(label3Cmd, file);
+            }
         } else {
             // IF LP Exp RP Stmt
-            operand label1 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
-            operand label2 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+            operand label1 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
+            operand label2 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
             translate_cond(exp, file, label1, label2);
 
             command label1Cmd = create_command(LABEL, NULL_OP, NULL_OP, label1, NULL_RELOP);
             append_command_to_file(label1Cmd, file);
 
-            translate_stmt(stmt1, file);
+            translate_stmt(stmt1, file, funcType);
 
             command label2Cmd = create_command(LABEL, NULL_OP, NULL_OP, label2, NULL_RELOP);
             append_command_to_file(label2Cmd, file);
@@ -359,9 +395,9 @@ void translate_stmt(Node *stmt, FILE *file) {
         Node *exp = child->next->next;
         Node *stmt = exp->next->next;
 
-        operand label1 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
-        operand label2 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
-        operand label3 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+        operand label1 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
+        operand label2 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
+        operand label3 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
 
         command label1Cmd = create_command(LABEL, NULL_OP, NULL_OP, label1, NULL_RELOP);
         append_command_to_file(label1Cmd, file);
@@ -371,7 +407,7 @@ void translate_stmt(Node *stmt, FILE *file) {
         command label2Cmd = create_command(LABEL, NULL_OP, NULL_OP, label2, NULL_RELOP);
         append_command_to_file(label2Cmd, file);
 
-        translate_stmt(stmt, file);
+        translate_stmt(stmt, file, funcType);
 
         command gotoCmd = create_command(GOTO, NULL_OP, NULL_OP, label1, NULL_RELOP);
         append_command_to_file(gotoCmd, file);
@@ -399,8 +435,24 @@ void translate_cond(Node *cond, FILE *file, operand label1, operand label2) {
         // RELOP
         operand op1 = translate_exp(exp1, file);
         operand op2 = translate_exp(exp2, file);
+
+        // if (op1->kind == CONSTANT) {
+        //     operand tempOp = create_operand(NULL_VALUE, NULL, TEMP, VAL);
+        //     command assignCmd = create_command(ASSIGN, op1, NULL_OP, tempOp, NULL_RELOP);
+        //     append_command_to_file(assignCmd, file);
+        //     op1 = tempOp;
+        // }
+        // if (op2->kind == CONSTANT) {
+        //     operand tempOp = create_operand(NULL_VALUE, NULL, TEMP, VAL);
+        //     command assignCmd = create_command(ASSIGN, op2, NULL_OP, tempOp, NULL_RELOP);
+        //     append_command_to_file(assignCmd, file);
+        //     op2 = tempOp;
+        // }
+
         char *relop_name = node->value.value.str_val;
         relop relop = str2relop(relop_name);
+
+        //  printf("relop: %s\n", relop_name);
 
         command ifgotoCmd = create_command(COND_GOTO, op1, op2, label1, relop);
         append_command_to_file(ifgotoCmd, file);
@@ -409,7 +461,7 @@ void translate_cond(Node *cond, FILE *file, operand label1, operand label2) {
         append_command_to_file(gotoLabel2Cmd, file);
     } else if (strcmp(node->name, "AND") == 0) {
         // AND
-        operand label = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+        operand label = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
         translate_cond(exp1, file, label, label2);
 
         command labelCmd = create_command(LABEL, NULL_OP, NULL_OP, label, NULL_RELOP);
@@ -418,7 +470,7 @@ void translate_cond(Node *cond, FILE *file, operand label1, operand label2) {
         translate_cond(exp2, file, label1, label2);
     } else if (strcmp(node->name, "OR") == 0) {
         // OR
-        operand label = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+        operand label = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
         translate_cond(exp1, file, label1, label);
 
         command labelCmd = create_command(LABEL, NULL_OP, NULL_OP, label, NULL_RELOP);
@@ -428,7 +480,9 @@ void translate_cond(Node *cond, FILE *file, operand label1, operand label2) {
     } else {
         // others (exp1 != 0)
         operand op1 = translate_exp(exp1, file);
-        operand op2 = create_operand(0, NULL, CONSTANT, VAL);
+        char *constantName = (char*)malloc(10 * sizeof(char));
+        snprintf(constantName, 10, "#%d", 0);
+        operand op2 = create_operand(0, constantName, CONSTANT, VAL);
 
         command ifgotoCmd = create_command(COND_GOTO, op1, op2, label1, NE);
 
@@ -450,11 +504,15 @@ operand translate_exp(Node *exp, FILE *file) {
     if (child->next == NULL) {
         if (strcmp(child->name, "INT") == 0) {
             // 整数常量
-            operand constantOp = create_operand(child->value.value.int_val, "#", CONSTANT, VAL);
+            char *constantName = (char*)malloc(10 * sizeof(char));
+            snprintf(constantName, 10, "#%d", child->value.value.int_val);
+            operand constantOp = create_operand(child->value.value.int_val, constantName, CONSTANT, VAL);
             return constantOp;
         } else if (strcmp(child->name, "FLOAT") == 0) {
             // 浮点数常量
-            operand constantOp = create_operand(child->value.value.float_val, "#", CONSTANT, VAL);
+            char *constantName = (char*)malloc(10 * sizeof(char));
+            snprintf(constantName, 10, "#%f", child->value.value.float_val);
+            operand constantOp = create_operand(child->value.value.float_val, constantName, CONSTANT, VAL);
             return constantOp;
         } else if (strcmp(child->name, "ID") == 0) {
             // 变量引用
@@ -490,21 +548,25 @@ operand translate_exp(Node *exp, FILE *file) {
             Node *exp1 = child->next;
             operand op = translate_exp(exp1, file);
             operand resOp = create_operand(-op->value, NULL, TEMP, VAL);
-            operand zeroOp = create_operand(0, NULL, CONSTANT, VAL);
-            command minusCmd = create_command(SUB, resOp, zeroOp, op, NULL_RELOP);
+            char *constantName = (char*)malloc(10 * sizeof(char));
+            snprintf(constantName, 10, "#%d", 0);
+            operand zeroOp = create_operand(0, constantName, CONSTANT, VAL);
+            command minusCmd = create_command(SUB, zeroOp, op, resOp, NULL_RELOP);
             append_command_to_file(minusCmd, file);
             return resOp;
-        } else if (strcmp(child->name, "ASSIGNOP") == 0) {
+        }
+        Node *secondChild = child->next;
+
+        if (strcmp(secondChild->name, "ASSIGNOP") == 0) {
             // Exp ASSIGNOP Exp
             Node *exp1 = child;
-            Node *exp2 = child->next;
+            Node *exp2 = child->next->next;
             operand lhs = translate_exp(exp1, file);
             operand rhs = translate_exp(exp2, file);
-            command assignCmd = create_command(ASSIGN, lhs, rhs, NULL_OP, NULL_RELOP);
+            command assignCmd = create_command(ASSIGN, rhs, NULL_OP, lhs, NULL_RELOP);
             append_command_to_file(assignCmd, file);
             return lhs;
         } 
-        Node *secondChild = child->next;
         if ((strcmp(secondChild->name, "PLUS") == 0) || (strcmp(secondChild->name, "MINUS") == 0) ||
             (strcmp(secondChild->name, "STAR") == 0) || (strcmp(secondChild->name, "DIV") == 0)) {
             // Exp PLUS Exp | Exp MINUS Exp | Exp STAR Exp | Exp DIV Exp
@@ -515,19 +577,19 @@ operand translate_exp(Node *exp, FILE *file) {
             operand resOp;
             if (strcmp(secondChild->name, "PLUS") == 0) {
                 resOp = create_operand(op1->value + op2->value, NULL, TEMP, VAL);
-                command plusCmd = create_command(ADD, resOp, op1, op2, NULL_RELOP);
+                command plusCmd = create_command(ADD, op1, op2, resOp, NULL_RELOP);
                 append_command_to_file(plusCmd, file);
             } else if (strcmp(secondChild->name, "MINUS") == 0) {
                 resOp = create_operand(op1->value - op2->value, NULL, TEMP, VAL);
-                command minusCmd = create_command(SUB, resOp, op1, op2, NULL_RELOP);
+                command minusCmd = create_command(SUB, op1, op2, resOp, NULL_RELOP);
                 append_command_to_file(minusCmd, file);
             } else if (strcmp(secondChild->name, "STAR") == 0) {
                 resOp = create_operand(op1->value * op2->value, NULL, TEMP, VAL);
-                command mulCmd = create_command(MUL, resOp, op1, op2, NULL_RELOP);
+                command mulCmd = create_command(MUL, op1, op2, resOp, NULL_RELOP);
                 append_command_to_file(mulCmd, file);
             } else if (strcmp(secondChild->name, "DIV") == 0) {
                 resOp = create_operand(op1->value / op2->value, NULL, TEMP, VAL);
-                command divCmd = create_command(DIV_OP, resOp, op1, op2, NULL_RELOP);
+                command divCmd = create_command(DIV_OP, op1, op2, resOp, NULL_RELOP);
                 append_command_to_file(divCmd, file);
             }
             return resOp;
@@ -535,18 +597,22 @@ operand translate_exp(Node *exp, FILE *file) {
         if ((strcmp(child->name, "NOT") == 0) || (strcmp(secondChild->name, "RELOP") == 0) ||
             (strcmp(secondChild->name, "AND") == 0) || (strcmp(secondChild->name, "OR") == 0)) {
             // NOT Exp | Exp RELOP Exp | Exp AND Exp | Exp OR Exp
-            operand label1 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
-            operand label2 = create_operand(NULL_VALUE, NULL, LABEL, VAL);
+            operand label1 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
+            operand label2 = create_operand(NULL_VALUE, NULL, LABEL_NAME, VAL);
 
             operand resOp = create_operand(NULL_VALUE, NULL, TEMP, VAL);
-            operand zeroOp = create_operand(0, NULL, CONSTANT, VAL);
+            char *constantName1 = (char*)malloc(10 * sizeof(char));
+            snprintf(constantName1, 10, "#%d", 0);
+            operand zeroOp = create_operand(0, constantName1, CONSTANT, VAL);
 
             command assignOp0 = create_command(ASSIGN, zeroOp, NULL_OP, resOp, NULL_RELOP);
             append_command_to_file(assignOp0, file);
 
             translate_cond(exp, file, label1, label2);
 
-            operand oneOp = create_operand(1, NULL, CONSTANT, VAL);
+            char *constantName2 = (char*)malloc(10 * sizeof(char)); 
+            snprintf(constantName2, 10, "#%d", 1);
+            operand oneOp = create_operand(1, constantName2, CONSTANT, VAL);
             command assignOp1 = create_command(ASSIGN, oneOp, NULL_OP, resOp, NULL_RELOP);
             command label1Cmd = create_command(LABEL, NULL_OP, NULL_OP, label1, NULL_RELOP);
             command label2Cmd = create_command(LABEL, NULL_OP, NULL_OP, label2, NULL_RELOP);
@@ -558,7 +624,7 @@ operand translate_exp(Node *exp, FILE *file) {
             return resOp;
         }
         if (strcmp(secondChild->name, "LP") == 0) {
-            if (secondChild->next == NULL) {
+            if (secondChild->next->next == NULL) {
                 // ID LP RP
                 char *funcName = child->value.value.str_val;
                 RBNode func = search(funcName, true);
@@ -583,15 +649,17 @@ operand translate_exp(Node *exp, FILE *file) {
                 if (func == NULL) assert(0);
 
                 Node *args = secondChild->next;
-                translate_args(args, file);
-
+                // WRITE don't need to translate args(write arg)
                 if (strcmp(funcName, "write") == 0) {
                     operand arg = translate_exp(args->child, file);
                     command writeCmd = create_command(WRITE, arg, NULL_OP, NULL_OP, NULL_RELOP);
                     append_command_to_file(writeCmd, file);
-                    operand place = create_operand(0, NULL, CONSTANT, VAL);
+                    char *constantName = (char*)malloc(10 * sizeof(char));
+                    snprintf(constantName, 10, "#%d", 0);
+                    operand place = create_operand(0, constantName, CONSTANT, VAL);
                     return place;
                 } else {
+                    translate_args(args, file);
                     operand place = create_operand(0, NULL, TEMP, VAL);
                     operand funcOp = create_operand(NULL_VALUE, funcName, FUNCTION_NAME, VAL);
                     command callCmd = create_command(CALL, funcOp, NULL_OP, place, NULL_RELOP);
@@ -611,7 +679,9 @@ operand translate_exp(Node *exp, FILE *file) {
 
             int offset = calculateFieldOffset(members, fieldName);
             operand temp = create_operand(NULL_VALUE, NULL_NAME, TEMP, VAL);
-            operand offsetOp = create_operand(offset, NULL, CONSTANT, VAL);
+            char *constantName = (char*)malloc(10 * sizeof(char));
+            snprintf(constantName, 10, "#%d", offset);
+            operand offsetOp = create_operand(offset, constantName, CONSTANT, VAL);
             command addCmd = create_command(ADD, structOp, offsetOp, temp, NULL_RELOP);
             append_command_to_file(addCmd, file);
             return structOp;
@@ -633,7 +703,9 @@ operand translate_exp(Node *exp, FILE *file) {
             int elemSize = calculateTypeSize(arrayType->u.array.elem);
             
             // 计算偏移量
-            operand offsetOp = create_operand(elemSize, NULL, CONSTANT, VAL);
+            char *constantName = (char*)malloc(10 * sizeof(char));
+            snprintf(constantName, 10, "#%d", elemSize);
+            operand offsetOp = create_operand(elemSize, constantName, CONSTANT, VAL);
             operand temp1 = create_operand(NULL_VALUE, NULL_NAME, TEMP, VAL);
             command mulCmd = create_command(MUL, temp1, indexOp, offsetOp, NULL_RELOP);
             append_command_to_file(mulCmd, file);
