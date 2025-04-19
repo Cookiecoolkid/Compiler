@@ -5,7 +5,7 @@
 ---
 
 #### 编译
-编译实验一采用 `Makefile` ，在```Code```目录下执行 `make` 即可，随后生成 `parser` 可执行文件。
+编译采用 `Makefile` ，在```Code```目录下执行 `make` 即可，随后生成 `parser` 可执行文件。
 
 ---
 
