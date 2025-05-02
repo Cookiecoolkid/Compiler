@@ -1,0 +1,14 @@
+
+FUNCTION inc :
+PARAM a_
+temp0 := a_ + #1
+b_ := temp0
+RETURN b_
+
+FUNCTION main :
+temp1 := #2 * #2
+lcVar_ := temp1
+ARG lcVar_
+temp2 := CALL inc
+rcVar_ := temp2
+RETURN #0
