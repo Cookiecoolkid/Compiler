@@ -7,16 +7,13 @@
 
 // 基本块结构体
 typedef struct BasicBlock {
-    int start_line;          // 基本块起始行号
-    int end_line;           // 基本块结束行号
     char **instructions;    // 基本块中的指令
     int num_instructions;   // 指令数量
     struct BasicBlock **successors;  // 后继基本块
     int num_successors;     // 后继基本块数量
     struct BasicBlock **predecessors;  // 前驱基本块
     int num_predecessors;   // 前驱基本块数量
-    int is_loop_entry;      // 是否是循环入口
-    int is_branch_target;   // 是否是分支目标
+    
     int is_entry_block;     // 是否是入口基本块
     int is_exit_block;      // 是否是出口基本块
 } BasicBlock;
@@ -33,6 +30,5 @@ typedef struct ControlFlowGraph {
 ControlFlowGraph* build_cfg(FILE *input);
 void free_cfg(ControlFlowGraph *cfg);
 void print_cfg(ControlFlowGraph *cfg, FILE *output);
-void analyze_loops(ControlFlowGraph *cfg);
 
 #endif // CFG_H
