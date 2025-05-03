@@ -1,0 +1,10 @@
+
+FUNCTION main :
+READ temp0
+a_ := temp0
+READ temp1
+b_ := temp1
+temp2 := a_ + b_
+c_ := temp2
+WRITE c_
+RETURN #0

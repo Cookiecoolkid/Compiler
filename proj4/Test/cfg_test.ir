@@ -1,0 +1,20 @@
+READ v1
+v2 := #0
+LABEL label1 :
+IF v1 > #1 GOTO label2
+GOTO label5
+LABEL label2 :
+t1 := v1 / #2
+t2 := t1 * #2
+v2 := v1 - t2
+IF v2 == #0 GOTO label3
+GOTO label4
+LABEL label3 :
+v1 := v1 / #2
+GOTO label1
+LABEL label4 :
+t3 := #3 * v1
+v1 := t3 + #1
+GOTO label1
+LABEL label5 :
+RETURN #0
