@@ -4,10 +4,10 @@ import gdb
 
 def setup_debug():
     # 设置断点并运行程序
-    gdb.execute('b process_expression')
+    # gdb.execute('b process_expression')
     gdb.execute('run ../Test/inc.cmm ../Test/inc.ir ../Test/tmp/inc.s')
-    gdb.execute('layout src')
-    gdb.execute('set pagination off')
+    # gdb.execute('layout src')
+    # gdb.execute('set pagination off')
 
 # 注册调试设置函数
 gdb.execute('set confirm off')  # 关闭确认提示
