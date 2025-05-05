@@ -11,4 +11,5 @@ lcVar_ := temp1
 ARG lcVar_
 temp2 := CALL inc
 rcVar_ := temp2
+WRITE rcVar_
 RETURN #0
