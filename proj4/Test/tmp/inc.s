@@ -37,8 +37,8 @@ lw $t1, -16($fp)
 lw $t0, -12($fp)
 lw $ra, -8($fp)
 lw $fp, -4($fp)
-move $sp, $fp
 jr $ra
+
 main:
 subu $sp, $sp, 8
 sw $fp, 4($sp)
@@ -63,5 +63,5 @@ li $t7, 0
 move $v0, $t7
 lw $ra, -8($fp)
 lw $fp, -4($fp)
-move $sp, $fp
 jr $ra
+
