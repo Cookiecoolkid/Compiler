@@ -28,6 +28,7 @@ typedef struct {
     char *var_name;
     int reg_index;      // -1表示不在寄存器
     int stack_offset;
+    int is_in_memory;   // 1表示变量在内存中，0表示变量尚未写入内存
 } AddressDescriptor;
 
 // 中间代码符号表节点结构体

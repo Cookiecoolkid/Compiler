@@ -1,0 +1,15 @@
+
+FUNCTION add :
+PARAM a_
+PARAM b_
+temp0 := a_ + b_
+RETURN temp0
+
+FUNCTION main :
+a_ := #2
+b_ := #3
+ARG a_
+ARG b_
+temp1 := CALL add
+c_ := temp1
+RETURN #0

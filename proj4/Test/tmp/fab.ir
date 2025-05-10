@@ -1,0 +1,21 @@
+
+FUNCTION main :
+a_ := #0
+b_ := #1
+i_ := #0
+READ temp0
+n_ := temp0
+LABEL label0 :
+IF i_ < n_ GOTO label1
+GOTO label2
+LABEL label1 :
+temp1 := a_ + b_
+c_ := temp1
+WRITE b_
+a_ := b_
+b_ := c_
+temp2 := i_ + #1
+i_ := temp2
+GOTO label0
+LABEL label2 :
+RETURN #0
