@@ -43,14 +43,8 @@ typedef struct InterSymbolTable {
     int stack_offset;       // 当前栈偏移量
 } InterSymbolTable;
 
-// 活跃变量信息结构体
-typedef struct LivenessInfo {
-    unsigned char bits[128]; // 1024 bits，每个bit表示一个变量是否活跃
-} LivenessInfo;
 
 // 函数声明
-void insert_symbol(const char *var_name);
-AddressDescriptor* lookup_symbol(const char *var_name);
 AddressDescriptor* ensure_symbol(const char* var);
 
 // 将中间代码翻译为MIPS汇编代码
@@ -60,7 +54,7 @@ void translate_to_mips(FILE *input, FILE *output);
 void assign_regs(const char *result, const char *op1, const char *op2, int *r_result, int *r_op1, int *r_op2, FILE *output);
 
 // Allocate和Ensure辅助函数
-int Allocate();
+int Allocate(const char* var);
 int Ensure(const char *var, FILE *output);
 
 #endif // ASSEMBLY_H
