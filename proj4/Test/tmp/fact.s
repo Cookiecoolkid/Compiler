@@ -77,11 +77,19 @@ jr $ra
 label1 :
 li $t2, 1# in get_operand_reg: load immediate 1
 sub $t3, $t0, $t2# in handle_binary_op: temp0 := n_ - #1
+sw $t3, -84($fp)
+# in spill_variable: store temp0 to stack
+lw $t3, -84($fp)
+# in load_variable: load temp0 from stack
 subu $sp, $sp, 4# ARG temp0: 压栈参数
 sw $t3, 0($sp)
 jal fact# CALL fact: 调用函数
 move $t4, $v0# CALL fact: 保存返回值
 mul $t5, $t0, $t4# in handle_binary_op: temp2 := n_ * temp1
+sw $t5, -92($fp)
+# in spill_variable: store temp2 to stack
+lw $t5, -92($fp)
+# in load_variable: load temp2 from stack
 move $v0, $t5# RETURN temp2: 设置返回值
 lw $t9, -80($fp)# RETURN temp2: 恢复寄存器$t9
 lw $t8, -76($fp)# RETURN temp2: 恢复寄存器$t8

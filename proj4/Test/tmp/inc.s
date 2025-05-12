@@ -48,8 +48,12 @@ sw $t9, -80($fp)# FUNCTION inc: 保存寄存器 $t9
 lw $t0, 0($fp)# PARAM a_: 读取第1个参数
 li $t1, 1# in get_operand_reg: load immediate 1
 add $t2, $t0, $t1# in handle_binary_op: temp0 := a_ + #1
-move $t3, $t2
-move $v0, $t3# RETURN b_: 设置返回值
+sw $t2, -84($fp)
+# in spill_variable: store temp0 to stack
+lw $t3, -84($fp)
+# in load_variable: load temp0 from stack
+move $t2, $t3
+move $v0, $t2# RETURN b_: 设置返回值
 lw $t9, -80($fp)# RETURN b_: 恢复寄存器$t9
 lw $t8, -76($fp)# RETURN b_: 恢复寄存器$t8
 lw $s7, -72($fp)# RETURN b_: 恢复寄存器$s7
@@ -81,9 +85,13 @@ addiu $fp, $sp, 80# FUNCTION main: 设置新的帧指针
 li $t4, 2# in get_operand_reg: load immediate 2
 li $t5, 2# in get_operand_reg: load immediate 2
 mul $t6, $t4, $t5# in handle_binary_op: temp1 := #2 * #2
-move $t7, $t6
+sw $t6, -92($fp)
+# in spill_variable: store temp1 to stack
+lw $t7, -92($fp)
+# in load_variable: load temp1 from stack
+move $t6, $t7
 subu $sp, $sp, 4# ARG lcVar_: 压栈参数
-sw $t7, 0($sp)
+sw $t6, 0($sp)
 jal inc# CALL inc: 调用函数
 move $s0, $v0# CALL inc: 保存返回值
 move $s1, $s0

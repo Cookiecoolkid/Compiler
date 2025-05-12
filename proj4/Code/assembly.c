@@ -135,6 +135,31 @@ static int get_operand_reg(const char* operand, FILE* output) {
     }
 }
 
+static void spill_variable(const char* var, FILE* output) {
+    int reg = Ensure(var, output);
+    AddressDescriptor* addr_desc = ensure_symbol(var);
+    fprintf(output, "sw %s, %d($fp)\n", regName[reg], -80 -addr_desc->stack_offset);
+    mips_fprintf_comment(output, "# in spill_variable: store %s to stack\n", var);
+    addr_desc->is_in_memory = 1;
+    addr_desc->reg_index = -1;
+    reg_desc[reg].is_used = 0;
+    reg_desc[reg].var_name = NULL;
+}   
+
+static void load_variable(const char* var, FILE* output) {
+    AddressDescriptor* addr_desc = ensure_symbol(var);
+    if (addr_desc->is_in_memory) {
+        int reg = Ensure(var, output);
+        fprintf(output, "lw %s, %d($fp)\n", regName[reg], -80 -addr_desc->stack_offset);
+        mips_fprintf_comment(output, "# in load_variable: load %s from stack\n", var);
+        addr_desc->is_in_memory = 0;
+        addr_desc->reg_index = reg;
+        reg_desc[reg].var_name = strdup(var);
+        reg_desc[reg].is_used = 1;
+        reg_desc[reg].timestamp = ++reg_timestamp_counter;
+    }
+}
+
 // 处理二元运算
 static void handle_binary_op(const char* x, const char* y, const char* z, const char* op, FILE* output) {
     // 获取操作数的寄存器
@@ -159,6 +184,14 @@ static void handle_binary_op(const char* x, const char* y, const char* z, const 
         fprintf(output, "mflo %s", regName[rx]);
         mips_fprintf_comment(output, "# in handle_binary_op: %s := %s / %s (get quotient)\n", x, y, z);
     }
+    
+    // 将结果写回内存
+    spill_variable(x, output);
+    
+    // 释放寄存器 (似乎 ry rz 不该释放，因为没将 y z 溢出到内存，这时释放会后续覆盖其数值)
+    // reg_desc[ry].is_used = 0;
+    // reg_desc[rz].is_used = 0;
+    // reg_desc[rx].is_used = 0;
 }
 
 // 处理赋值操作
@@ -494,7 +527,6 @@ void translate_to_mips(FILE *input, FILE *output) {
 
 int Allocate(const char* var) {
     // 1. 先找空闲寄存器
-    int min_time = 0x7fffffff, min_idx = -1;
     for (int i = 0; i < mips_reg_list_len; ++i) {
         int reg = mips_reg_list[i];
         if (!reg_desc[reg].is_used) {
@@ -509,7 +541,9 @@ int Allocate(const char* var) {
             return reg;
         }
     }
+    
     // 2. 没有空闲，找最久未用的
+    int min_time = 0x7fffffff, min_idx = -1;
     for (int i = 0; i < mips_reg_list_len; ++i) {
         int reg = mips_reg_list[i];
         if (reg_desc[reg].timestamp < min_time) {
@@ -518,12 +552,13 @@ int Allocate(const char* var) {
         }
     }
     
-    // 如果寄存器中已有变量，更新其地址描述符
+    // 如果寄存器中已有变量，将其溢出到内存
     if (reg_desc[min_idx].var_name) {
         // 更新原变量的地址描述符
         AddressDescriptor* old_addr_desc = lookup_symbol(reg_desc[min_idx].var_name);
         if (old_addr_desc) {
             old_addr_desc->reg_index = -1;
+            old_addr_desc->is_in_memory = 1;  // 标记变量在内存中
         }
         free(reg_desc[min_idx].var_name);
     }
@@ -553,11 +588,9 @@ int Ensure(const char *var, FILE *output) {
     // 不在，分配新寄存器
     int reg = Allocate(var);
     
-    // 只有当变量在内存中时才需要加载
-    if (addr_desc->is_in_memory) {
-        fprintf(output, "lw %s, %d($fp)\n", regName[reg], addr_desc->stack_offset);
-        mips_fprintf_comment(output, "# in Ensure: load %s from stack\n", var);
-    }
+    // 只有当变量在内存中时才需要加载(函数内判断)
+    load_variable(var, output);
+
     return reg;
 }
 
