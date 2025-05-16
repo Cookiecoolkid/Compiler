@@ -198,8 +198,20 @@ int getFieldListLength(FieldList fl) {
 
 int calculateTypeSize(Type type) {
     switch (type->kind) {
-        case BASIC: 
-            return 4; // int, float 大小为4字节
+        case BASIC: {
+            int typeVal = type->u.basic;
+            if (typeVal == INT_) {
+                return 4;
+            } else if (typeVal == FLOAT_) {
+                return 4;
+            } else {
+                char structName[256];  
+                snprintf(structName, sizeof(structName), "%d", type->u.basic); 
+                RBNode structVar = search(structName, true);
+                if (structVar == NULL) assert(0);
+                return calculateTypeSize(structVar->symbol->type);
+            }
+        }
         case ARRAY:
             return type->u.array.size * calculateTypeSize(type->u.array.elem);
         case STRUCTURE: {

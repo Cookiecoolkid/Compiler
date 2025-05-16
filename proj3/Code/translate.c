@@ -445,7 +445,18 @@ void translate_stmt(Node *stmt, FILE *file, Type funcType) {
 void translate_cond(Node *cond, FILE *file, operand label1, operand label2) {
     // Cond: Exp RELOP Exp
     // label1: true label  label2: false label
+
     assert(cond != NULL);
+    int numChild = get_child_num(cond);
+    assert(numChild == 3);
+
+    // FIXME 处理嵌套括号的情况
+    if (strcmp(cond->child->name, "LP") == 0) {
+        translate_cond(cond->child->next, file, label1, label2);
+        return;
+    }
+
+
     Node *exp1 = cond->child;
     Node *node = exp1->next;
     Node *exp2 = node->next;
@@ -768,6 +779,11 @@ operand translate_exp(Node *exp, FILE *file) {
             if (exp->next != NULL && strcmp(exp->next->name, "ASSIGNOP") == 0) {
                 return temp;
             }
+
+            // FIXME 处理嵌套 s1.s2.member 情况
+            if (exp->next != NULL && strcmp(exp->next->name, "DOT") == 0) {
+                return temp;
+            }
             
             // 否则需要取操作数
             operand derefOp = create_operand(NULL_VALUE, NULL_NAME, TEMP, VAL);
@@ -835,10 +851,16 @@ void translate_args(Node *args, FILE *file) {
     if (exp == NULL) return;
 
     operand argOp = translate_exp(exp, file);
-    command argCmd = create_command(ARG, argOp, NULL_OP, NULL_OP, NULL_RELOP);
-    append_command_to_file(argCmd, file);
+
+    // // FIXME: 在实验三这里参数传反了
+    // command argCmd = create_command(ARG, argOp, NULL_OP, NULL_OP, NULL_RELOP);
+    // append_command_to_file(argCmd, file);
 
     if (exp->next != NULL && strcmp(exp->next->name, "COMMA") == 0) {
         translate_args(exp->next->next, file);
     }
+
+    // FIXME: 应当在这里（否则顺序是错的）
+    command argCmd = create_command(ARG, argOp, NULL_OP, NULL_OP, NULL_RELOP);
+    append_command_to_file(argCmd, file);
 }
