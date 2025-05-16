@@ -1,0 +1,99 @@
+
+FUNCTION calculateBase :
+PARAM inputParam_
+IF inputParam_ > #50 GOTO label0
+GOTO label1
+LABEL label0 :
+temp0 := inputParam_ / #2
+baseRes_ := temp0
+RETURN baseRes_
+GOTO label2
+LABEL label1 :
+temp1 := inputParam_ + #10
+baseRes_ := temp1
+RETURN baseRes_
+LABEL label2 :
+
+FUNCTION determineIndex :
+PARAM baseIn_
+PARAM inputOther_
+temp2 := baseIn_ + inputOther_
+temp3 := temp2 / #5
+indexRes_ := temp3
+IF indexRes_ < #0 GOTO label3
+GOTO label4
+LABEL label3 :
+RETURN #0
+LABEL label4 :
+IF indexRes_ > #4 GOTO label5
+GOTO label6
+LABEL label5 :
+RETURN #4
+LABEL label6 :
+RETURN indexRes_
+
+FUNCTION main :
+DEC dataArray_ 20
+temp4 := &dataArray_
+temp5 := #0 * #4
+temp6 := temp5 + temp4
+*temp6 := #1
+temp7 := &dataArray_
+temp8 := #1 * #4
+temp9 := temp8 + temp7
+*temp9 := #2
+temp10 := &dataArray_
+temp11 := #2 * #4
+temp12 := temp11 + temp10
+*temp12 := #3
+temp13 := &dataArray_
+temp14 := #3 * #4
+temp15 := temp14 + temp13
+*temp15 := #4
+temp16 := &dataArray_
+temp17 := #4 * #4
+temp18 := temp17 + temp16
+*temp18 := #5
+READ temp19
+val1_ := temp19
+READ temp20
+val2_ := temp20
+ARG val1_
+temp21 := CALL calculateBase
+baseOut_ := temp21
+ARG val2_
+ARG baseOut_
+temp22 := CALL determineIndex
+targetIdx_ := temp22
+temp23 := &dataArray_
+temp24 := targetIdx_ * #4
+temp25 := temp24 + temp23
+temp26 := *temp25
+originalVal_ := temp26
+IF baseOut_ > #30 GOTO label10
+GOTO label8
+LABEL label10 :
+IF val2_ > #0 GOTO label7
+GOTO label8
+LABEL label7 :
+temp27 := &dataArray_
+temp28 := targetIdx_ * #4
+temp29 := temp28 + temp27
+*temp29 := baseOut_
+GOTO label9
+LABEL label8 :
+temp30 := &dataArray_
+temp31 := targetIdx_ * #4
+temp32 := temp31 + temp30
+temp33 := originalVal_ * #2
+*temp32 := temp33
+LABEL label9 :
+temp34 := &dataArray_
+temp35 := targetIdx_ * #4
+temp36 := temp35 + temp34
+temp37 := *temp36
+modifiedVal_ := temp37
+WRITE targetIdx_
+WRITE originalVal_
+WRITE modifiedVal_
+RETURN #0

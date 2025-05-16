@@ -1,0 +1,47 @@
+
+FUNCTION incrementElemFunc :
+PARAM targetVector_
+PARAM indexFixed_
+temp0 := indexFixed_ * #4
+temp1 := temp0 + targetVector_
+temp2 := indexFixed_ * #4
+temp3 := temp2 + targetVector_
+temp4 := *temp3
+temp5 := temp4 + #1
+*temp1 := temp5
+temp6 := indexFixed_ * #4
+temp7 := temp6 + targetVector_
+temp8 := *temp7
+RETURN temp8
+
+FUNCTION main :
+DEC dataList_ 16
+modifyFixedIdx_ := #1
+temp9 := &dataList_
+temp10 := #0 * #4
+temp11 := temp10 + temp9
+*temp11 := #10
+temp12 := &dataList_
+temp13 := #1 * #4
+temp14 := temp13 + temp12
+*temp14 := #30
+temp15 := &dataList_
+temp16 := #2 * #4
+temp17 := temp16 + temp15
+*temp17 := #50
+temp18 := &dataList_
+temp19 := #3 * #4
+temp20 := temp19 + temp18
+*temp20 := #70
+temp21 := &dataList_
+ARG modifyFixedIdx_
+ARG temp21
+temp22 := CALL incrementElemFunc
+valModified_ := temp22
+WRITE valModified_
+temp23 := &dataList_
+temp24 := #0 * #4
+temp25 := temp24 + temp23
+temp26 := *temp25
+WRITE temp26
+RETURN #0

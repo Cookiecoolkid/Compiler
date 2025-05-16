@@ -1,0 +1,30 @@
+
+FUNCTION processVector :
+PARAM vecParam_
+temp0 := vecParam_ + #0
+temp1 := *temp0
+tempDx_ := temp1
+temp2 := vecParam_ + #4
+temp3 := *temp2
+tempDy_ := temp3
+temp4 := tempDy_ * #2
+temp5 := tempDx_ + temp4
+resultVal_ := temp5
+RETURN resultVal_
+
+FUNCTION main :
+DEC motionVector_ 8
+temp6 := &motionVector_
+temp7 := temp6 + #0
+READ temp8
+*temp7 := temp8
+temp9 := &motionVector_
+temp10 := temp9 + #4
+READ temp11
+*temp10 := temp11
+temp12 := &motionVector_
+ARG temp12
+temp13 := CALL processVector
+processedResult_ := temp13
+WRITE processedResult_
+RETURN #0

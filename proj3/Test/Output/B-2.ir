@@ -1,0 +1,63 @@
+
+FUNCTION processGridValue :
+PARAM rowIdx_
+PARAM colIdx_
+PARAM factorParam_
+temp0 := rowIdx_ * rowIdx_
+temp1 := colIdx_ * factorParam_
+temp2 := temp0 + temp1
+gridResult_ := temp2
+temp3 := gridResult_ / #10
+temp4 := temp3 * #10
+IF temp4 == gridResult_ GOTO label0
+GOTO label1
+LABEL label0 :
+temp5 := gridResult_ / #10
+RETURN temp5
+GOTO label2
+LABEL label1 :
+temp6 := gridResult_ + #5
+RETURN temp6
+LABEL label2 :
+
+FUNCTION main :
+gridSize_ := #4
+rowLoop_ := #0
+colLoop_ := #0
+gridTotalSum_ := #0
+gridConditionCount_ := #0
+READ temp7
+procFactor_ := temp7
+LABEL label3 :
+IF rowLoop_ < gridSize_ GOTO label4
+GOTO label5
+LABEL label4 :
+colLoop_ := #0
+LABEL label6 :
+IF colLoop_ < gridSize_ GOTO label7
+GOTO label8
+LABEL label7 :
+ARG procFactor_
+ARG colLoop_
+ARG rowLoop_
+temp8 := CALL processGridValue
+gridProcessedVal_ := temp8
+temp9 := gridTotalSum_ + gridProcessedVal_
+gridTotalSum_ := temp9
+IF gridProcessedVal_ > #25 GOTO label9
+GOTO label10
+LABEL label9 :
+temp10 := gridConditionCount_ + #1
+gridConditionCount_ := temp10
+LABEL label10 :
+temp11 := colLoop_ + #1
+colLoop_ := temp11
+GOTO label6
+LABEL label8 :
+temp12 := rowLoop_ + #1
+rowLoop_ := temp12
+GOTO label3
+LABEL label5 :
+WRITE gridTotalSum_
+WRITE gridConditionCount_
+RETURN #0

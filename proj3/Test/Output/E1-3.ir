@@ -1,0 +1,53 @@
+
+FUNCTION analyzePixel :
+PARAM pixelParam_
+analysisCode_ := #0
+temp0 := pixelParam_ + #8
+temp1 := temp0 + #0
+temp2 := *temp1
+redValue_ := temp2
+temp3 := pixelParam_ + #0
+temp4 := *temp3
+xPos_ := temp4
+IF redValue_ > #100 GOTO label0
+GOTO label1
+LABEL label0 :
+temp5 := analysisCode_ + #10
+analysisCode_ := temp5
+LABEL label1 :
+IF xPos_ < #50 GOTO label2
+GOTO label3
+LABEL label2 :
+temp6 := analysisCode_ + #1
+analysisCode_ := temp6
+LABEL label3 :
+RETURN analysisCode_
+
+FUNCTION main :
+DEC screenPixel_ 20
+temp7 := &screenPixel_
+temp8 := temp7 + #8
+temp9 := temp8 + #0
+READ temp10
+*temp9 := temp10
+temp11 := &screenPixel_
+temp12 := temp11 + #8
+temp13 := temp12 + #4
+*temp13 := #100
+temp14 := &screenPixel_
+temp15 := temp14 + #8
+temp16 := temp15 + #8
+*temp16 := #50
+temp17 := &screenPixel_
+temp18 := temp17 + #0
+READ temp19
+*temp18 := temp19
+temp20 := &screenPixel_
+temp21 := temp20 + #4
+*temp21 := #80
+temp22 := &screenPixel_
+ARG temp22
+temp23 := CALL analyzePixel
+analysisResult_ := temp23
+WRITE analysisResult_
+RETURN #0

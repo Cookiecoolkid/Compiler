@@ -1,0 +1,25 @@
+
+FUNCTION main :
+DEC startPoint_ 8
+temp0 := &startPoint_
+temp1 := temp0 + #0
+*temp1 := #3
+temp2 := &startPoint_
+temp3 := temp2 + #4
+*temp3 := #5
+temp4 := &startPoint_
+temp5 := temp4 + #0
+temp6 := *temp5
+tempValX_ := temp6
+temp7 := &startPoint_
+temp8 := temp7 + #4
+temp9 := *temp8
+tempValY_ := temp9
+temp10 := tempValX_ * tempValX_
+temp11 := tempValY_ * tempValY_
+temp12 := temp10 + temp11
+calculatedDist_ := temp12
+WRITE tempValX_
+WRITE tempValY_
+WRITE calculatedDist_
+RETURN #0

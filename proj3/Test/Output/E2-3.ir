@@ -1,0 +1,152 @@
+
+FUNCTION processFixed1DArrayWithCheck :
+PARAM arrayParam_
+PARAM checkVal_
+sum_ := #0
+i_ := #0
+LABEL label0 :
+IF i_ < #4 GOTO label1
+GOTO label2
+LABEL label1 :
+temp0 := i_ * #4
+temp1 := temp0 + arrayParam_
+temp2 := *temp1
+IF temp2 != checkVal_ GOTO label3
+GOTO label4
+LABEL label3 :
+temp3 := i_ * #4
+temp4 := temp3 + arrayParam_
+temp5 := *temp4
+temp6 := sum_ + temp5
+sum_ := temp6
+LABEL label4 :
+temp7 := i_ + #1
+i_ := temp7
+GOTO label0
+LABEL label2 :
+RETURN sum_
+
+FUNCTION main :
+DEC cubeStorage_ 48
+DEC lineVector_ 16
+iDim_ := #0
+jDim_ := #0
+kDim_ := #0
+cubeEvenSum_ := #0
+iDim_ := #0
+LABEL label5 :
+IF iDim_ < #4 GOTO label6
+GOTO label7
+LABEL label6 :
+temp8 := &lineVector_
+temp9 := iDim_ * #4
+temp10 := temp9 + temp8
+temp11 := iDim_ * #3
+temp12 := temp11 + #1
+*temp10 := temp12
+temp13 := iDim_ + #1
+iDim_ := temp13
+GOTO label5
+LABEL label7 :
+iDim_ := #0
+LABEL label8 :
+IF iDim_ < #2 GOTO label9
+GOTO label10
+LABEL label9 :
+jDim_ := #0
+LABEL label11 :
+IF jDim_ < #3 GOTO label12
+GOTO label13
+LABEL label12 :
+kDim_ := #0
+LABEL label14 :
+IF kDim_ < #2 GOTO label15
+GOTO label16
+LABEL label15 :
+temp14 := &cubeStorage_
+temp15 := iDim_ * #24
+temp16 := temp15 + temp14
+temp17 := jDim_ * #8
+temp18 := temp17 + temp16
+temp19 := kDim_ * #4
+temp20 := temp19 + temp18
+temp21 := iDim_ * #100
+temp22 := jDim_ * #10
+temp23 := temp21 + temp22
+temp24 := temp23 + kDim_
+*temp20 := temp24
+temp25 := kDim_ + #1
+kDim_ := temp25
+GOTO label14
+LABEL label16 :
+temp26 := jDim_ + #1
+jDim_ := temp26
+GOTO label11
+LABEL label13 :
+temp27 := iDim_ + #1
+iDim_ := temp27
+GOTO label8
+LABEL label10 :
+READ temp28
+skipValue_ := temp28
+temp29 := &lineVector_
+ARG skipValue_
+ARG temp29
+temp30 := CALL processFixed1DArrayWithCheck
+lineProcResult_ := temp30
+iDim_ := #0
+LABEL label17 :
+IF iDim_ < #2 GOTO label18
+GOTO label19
+LABEL label18 :
+jDim_ := #0
+LABEL label20 :
+IF jDim_ < #3 GOTO label21
+GOTO label22
+LABEL label21 :
+kDim_ := #0
+LABEL label23 :
+IF kDim_ < #2 GOTO label24
+GOTO label25
+LABEL label24 :
+temp31 := &cubeStorage_
+temp32 := iDim_ * #24
+temp33 := temp32 + temp31
+temp34 := jDim_ * #8
+temp35 := temp34 + temp33
+temp36 := kDim_ * #4
+temp37 := temp36 + temp35
+temp38 := *temp37
+currentCubeVal_ := temp38
+temp39 := currentCubeVal_ / #2
+temp40 := temp39 * #2
+IF temp40 == currentCubeVal_ GOTO label26
+GOTO label27
+LABEL label26 :
+temp41 := cubeEvenSum_ + currentCubeVal_
+cubeEvenSum_ := temp41
+LABEL label27 :
+temp42 := kDim_ + #1
+kDim_ := temp42
+GOTO label23
+LABEL label25 :
+temp43 := jDim_ + #1
+jDim_ := temp43
+GOTO label20
+LABEL label22 :
+temp44 := iDim_ + #1
+iDim_ := temp44
+GOTO label17
+LABEL label19 :
+IF lineProcResult_ > cubeEvenSum_ GOTO label28
+GOTO label29
+LABEL label28 :
+finalComp_ := #1
+GOTO label30
+LABEL label29 :
+finalComp_ := #0
+LABEL label30 :
+WRITE lineProcResult_
+WRITE cubeEvenSum_
+WRITE finalComp_
+RETURN #0
