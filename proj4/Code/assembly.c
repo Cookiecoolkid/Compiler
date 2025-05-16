@@ -146,7 +146,7 @@ static void spill_variable(const char* var, FILE* output) {
     reg_desc[reg].var_name = NULL;
 }   
 
-static void load_variable(const char* var, FILE* output) {
+static void load_variable_if_not_in_memory(const char* var, FILE* output) {
     AddressDescriptor* addr_desc = ensure_symbol(var);
     if (addr_desc->is_in_memory) {
         int reg = Ensure(var, output);
@@ -589,7 +589,7 @@ int Ensure(const char *var, FILE *output) {
     int reg = Allocate(var);
     
     // 只有当变量在内存中时才需要加载(函数内判断)
-    load_variable(var, output);
+    load_variable_if_not_in_memory(var, output);
 
     return reg;
 }
