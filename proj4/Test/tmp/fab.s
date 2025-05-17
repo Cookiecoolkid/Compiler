@@ -43,9 +43,7 @@ j label2# GOTO label2
 label1 :
 add $t5, $t0, $t1# in handle_binary_op: temp1 := a_ + b_
 sw $t5, -100($fp)
-# in spill_variable: store temp1 to stack
 lw $t6, -100($fp)
-# in load_variable: load temp1 from stack
 move $t5, $t6
 move $a0, $t1# WRITE b_: 将值移动到$a0
 subu $sp, $sp, 4# WRITE b_: 保存返回地址
@@ -58,9 +56,7 @@ move $t1, $t5
 li $t7, 1# in get_operand_reg: load immediate 1
 add $s0, $t2, $t7# in handle_binary_op: temp2 := i_ + #1
 sw $s0, -108($fp)
-# in spill_variable: store temp2 to stack
 lw $s0, -108($fp)
-# in load_variable: load temp2 from stack
 move $t2, $s0
 j label0# GOTO label0
 label2 :

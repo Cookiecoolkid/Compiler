@@ -1,0 +1,59 @@
+
+FUNCTION main :
+DEC dataArr_ 20
+temp0 := &dataArr_
+temp1 := #0 * #4
+temp2 := temp1 + temp0
+*temp2 := #10
+temp3 := &dataArr_
+temp4 := #4 * #4
+temp5 := temp4 + temp3
+*temp5 := #50
+READ temp6
+val1_ := temp6
+READ temp7
+index1_ := temp7
+temp8 := &dataArr_
+temp9 := index1_ * #4
+temp10 := temp9 + temp8
+*temp10 := val1_
+READ temp11
+index2_ := temp11
+temp12 := &dataArr_
+temp13 := #0 * #4
+temp14 := temp13 + temp12
+temp15 := *temp14
+temp16 := &dataArr_
+temp17 := index1_ * #4
+temp18 := temp17 + temp16
+temp19 := *temp18
+temp20 := temp15 + temp19
+temp_ := temp20
+temp21 := &dataArr_
+temp22 := index2_ * #4
+temp23 := temp22 + temp21
+temp24 := *temp23
+temp25 := temp_ * temp24
+calculatedVal_ := temp25
+temp26 := &dataArr_
+temp27 := #0 * #4
+temp28 := temp27 + temp26
+temp29 := *temp28
+WRITE temp29
+temp30 := &dataArr_
+temp31 := index1_ * #4
+temp32 := temp31 + temp30
+temp33 := *temp32
+WRITE temp33
+temp34 := &dataArr_
+temp35 := index2_ * #4
+temp36 := temp35 + temp34
+temp37 := *temp36
+WRITE temp37
+temp38 := &dataArr_
+temp39 := #4 * #4
+temp40 := temp39 + temp38
+temp41 := *temp40
+WRITE temp41
+WRITE calculatedVal_
+RETURN #0

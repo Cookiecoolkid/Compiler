@@ -46,7 +46,7 @@ sw $s7, -72($fp)# FUNCTION fact: 保存寄存器 $s7
 sw $t8, -76($fp)# FUNCTION fact: 保存寄存器 $t8
 sw $t9, -80($fp)# FUNCTION fact: 保存寄存器 $t9
 lw $t0, 0($fp)# PARAM n_: 读取第1个参数
-li $t1, 1# in get_operand_reg: load immediate 1
+li $t1, 1
 beq $t0, $t1, label0
 j label1# GOTO label1
 label0 :
@@ -75,21 +75,17 @@ addi $sp, $sp, 80
 jr $ra
 
 label1 :
-li $t2, 1# in get_operand_reg: load immediate 1
+li $t2, 1
 sub $t3, $t0, $t2# in handle_binary_op: temp0 := n_ - #1
 sw $t3, -84($fp)
-# in spill_variable: store temp0 to stack
 lw $t3, -84($fp)
-# in load_variable: load temp0 from stack
 subu $sp, $sp, 4# ARG temp0: 压栈参数
 sw $t3, 0($sp)
 jal fact# CALL fact: 调用函数
 move $t4, $v0# CALL fact: 保存返回值
 mul $t5, $t0, $t4# in handle_binary_op: temp2 := n_ * temp1
 sw $t5, -92($fp)
-# in spill_variable: store temp2 to stack
 lw $t5, -92($fp)
-# in load_variable: load temp2 from stack
 move $v0, $t5# RETURN temp2: 设置返回值
 lw $t9, -80($fp)# RETURN temp2: 恢复寄存器$t9
 lw $t8, -76($fp)# RETURN temp2: 恢复寄存器$t8
@@ -126,7 +122,7 @@ lw $ra, 0($sp)
 addi $sp, $sp, 4# READ temp3: 恢复返回地址
 move $t6, $v0# READ temp3: 将返回值存储到temp3
 move $t7, $t6
-li $s0, 1# in get_operand_reg: load immediate 1
+li $s0, 1
 bgt $t7, $s0, label3
 j label4# GOTO label4
 label3 :
@@ -137,7 +133,7 @@ move $s1, $v0# CALL fact: 保存返回值
 move $s2, $s1
 j label5# GOTO label5
 label4 :
-li $s2, 1
+li $s3, 1
 label5 :
 move $a0, $s2# WRITE result_: 将值移动到$a0
 subu $sp, $sp, 4# WRITE result_: 保存返回地址
@@ -145,8 +141,8 @@ sw $ra, 0($sp)
 jal write# WRITE result_: 调用write函数
 lw $ra, 0($sp)
 addi $sp, $sp, 4# WRITE result_: 恢复返回地址
-li $s3, 0# in get_operand_reg: load immediate 0
-move $v0, $s3# RETURN #0: 设置返回值
+li $s4, 0
+move $v0, $s4# RETURN #0: 设置返回值
 lw $ra, -8($fp)# RETURN #0: 恢复返回地址
 lw $fp, -4($fp)# RETURN #0: 恢复帧指针
 addi $sp, $sp, 80

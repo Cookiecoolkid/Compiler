@@ -56,23 +56,23 @@ int main(int argc, char **argv) {
       return 1;
     }
     
-    printf("Building control flow graph...\n");
+    // printf("Building control flow graph...\n");
 
-    // 构建控制流图
-    ControlFlowGraph *cfg = build_cfg(intermediate_file);
-    if (cfg == NULL) {
-      fprintf(stderr, "Error building control flow graph\n");
-      fclose(intermediate_file);
-      fclose(assembly_file);
-      return 1;
-    }
+    // // 构建控制流图
+    // ControlFlowGraph *cfg = build_cfg(intermediate_file);
+    // if (cfg == NULL) {
+    //   fprintf(stderr, "Error building control flow graph\n");
+    //   fclose(intermediate_file);
+    //   fclose(assembly_file);
+    //   return 1;
+    // }
     
-    // 打印控制流图到标准输出
-    printf("\n=== Control Flow Graph Analysis ===\n");
-    print_cfg(cfg, stdout);
+    // // 打印控制流图到标准输出
+    // printf("\n=== Control Flow Graph Analysis ===\n");
+    // print_cfg(cfg, stdout);
     
-    // 重新定位文件指针到开始位置
-    rewind(intermediate_file);
+    // // 重新定位文件指针到开始位置
+    // rewind(intermediate_file);
     
     // 将中间代码翻译为MIPS汇编
     translate_to_mips(intermediate_file, assembly_file);

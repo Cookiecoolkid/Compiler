@@ -1,0 +1,38 @@
+
+FUNCTION main :
+totalSum_ := #0
+READ temp0
+n_ := temp0
+i_ := #1
+LABEL label0 :
+IF i_ <= n_ GOTO label1
+GOTO label2
+LABEL label1 :
+j_ := #1
+LABEL label3 :
+IF j_ <= n_ GOTO label4
+GOTO label5
+LABEL label4 :
+temp1 := i_ * #10
+temp2 := temp1 + j_
+currentVal_ := temp2
+temp3 := i_ + j_
+tempSum_ := temp3
+temp4 := tempSum_ / #2
+temp5 := temp4 * #2
+IF temp5 == tempSum_ GOTO label6
+GOTO label7
+LABEL label6 :
+temp6 := totalSum_ + currentVal_
+totalSum_ := temp6
+LABEL label7 :
+temp7 := j_ + #1
+j_ := temp7
+GOTO label3
+LABEL label5 :
+temp8 := i_ + #1
+i_ := temp8
+GOTO label0
+LABEL label2 :
+WRITE totalSum_
+RETURN #0

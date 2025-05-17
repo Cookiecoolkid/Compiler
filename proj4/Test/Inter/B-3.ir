@@ -1,0 +1,139 @@
+
+FUNCTION getNextValue :
+PARAM idxParam_
+PARAM oldValParam_
+PARAM modParam_
+temp0 := idxParam_ / #2
+temp1 := temp0 * #2
+IF temp1 == idxParam_ GOTO label0
+GOTO label1
+LABEL label0 :
+temp2 := idxParam_ + #5
+valueModifier_ := temp2
+GOTO label2
+LABEL label1 :
+temp3 := idxParam_ * #3
+valueModifier_ := temp3
+LABEL label2 :
+temp4 := oldValParam_ + valueModifier_
+RETURN temp4
+
+FUNCTION checkComplexCondition :
+PARAM valueToCheck_
+PARAM checkThresholdParam_
+IF valueToCheck_ > #50 GOTO label5
+GOTO label4
+LABEL label5 :
+IF checkThresholdParam_ < #5 GOTO label3
+GOTO label4
+LABEL label3 :
+RETURN #1
+LABEL label4 :
+IF valueToCheck_ < #10 GOTO label8
+GOTO label7
+LABEL label8 :
+IF checkThresholdParam_ > #0 GOTO label6
+GOTO label7
+LABEL label6 :
+RETURN #1
+LABEL label7 :
+RETURN #0
+
+FUNCTION main :
+DEC mainArray_ 20
+loopCounter_ := #0
+conditionMetCounter_ := #0
+temp5 := &mainArray_
+temp6 := #0 * #4
+temp7 := temp6 + temp5
+*temp7 := #5
+temp8 := &mainArray_
+temp9 := #1 * #4
+temp10 := temp9 + temp8
+*temp10 := #8
+temp11 := &mainArray_
+temp12 := #2 * #4
+temp13 := temp12 + temp11
+*temp13 := #3
+temp14 := &mainArray_
+temp15 := #3 * #4
+temp16 := temp15 + temp14
+*temp16 := #12
+temp17 := &mainArray_
+temp18 := #4 * #4
+temp19 := temp18 + temp17
+*temp19 := #7
+READ temp20
+valueModifierIn_ := temp20
+READ temp21
+complexCheckValIn_ := temp21
+READ temp22
+loopExecLimit_ := temp22
+IF loopExecLimit_ > #5 GOTO label9
+GOTO label10
+LABEL label9 :
+loopExecLimit_ := #5
+LABEL label10 :
+IF loopExecLimit_ < #0 GOTO label11
+GOTO label12
+LABEL label11 :
+loopExecLimit_ := #0
+LABEL label12 :
+LABEL label13 :
+IF loopCounter_ < loopExecLimit_ GOTO label14
+GOTO label15
+LABEL label14 :
+temp23 := &mainArray_
+temp24 := loopCounter_ * #4
+temp25 := temp24 + temp23
+temp26 := &mainArray_
+temp27 := loopCounter_ * #4
+temp28 := temp27 + temp26
+temp29 := *temp28
+ARG valueModifierIn_
+ARG temp29
+ARG loopCounter_
+temp30 := CALL getNextValue
+*temp25 := temp30
+temp31 := &mainArray_
+temp32 := loopCounter_ * #4
+temp33 := temp32 + temp31
+temp34 := *temp33
+ARG complexCheckValIn_
+ARG temp34
+temp35 := CALL checkComplexCondition
+IF temp35 == #1 GOTO label16
+GOTO label17
+LABEL label16 :
+temp36 := conditionMetCounter_ + #1
+conditionMetCounter_ := temp36
+LABEL label17 :
+temp37 := loopCounter_ + #1
+loopCounter_ := temp37
+GOTO label13
+LABEL label15 :
+temp38 := &mainArray_
+temp39 := #0 * #4
+temp40 := temp39 + temp38
+temp41 := *temp40
+WRITE temp41
+IF loopExecLimit_ > #0 GOTO label18
+GOTO label19
+LABEL label18 :
+temp42 := &mainArray_
+temp43 := loopExecLimit_ - #1
+temp44 := temp43 * #4
+temp45 := temp44 + temp42
+temp46 := *temp45
+WRITE temp46
+GOTO label20
+LABEL label19 :
+temp47 := &mainArray_
+temp48 := #0 * #4
+temp49 := temp48 + temp47
+temp50 := *temp49
+WRITE temp50
+LABEL label20 :
+WRITE conditionMetCounter_
+WRITE loopCounter_
+RETURN #0

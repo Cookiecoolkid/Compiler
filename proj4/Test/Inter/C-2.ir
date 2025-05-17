@@ -1,0 +1,63 @@
+
+FUNCTION isDivisibleBy :
+PARAM numParam_
+PARAM divisorParam_
+IF divisorParam_ <= #0 GOTO label0
+GOTO label1
+LABEL label0 :
+RETURN #0
+LABEL label1 :
+IF divisorParam_ == #1 GOTO label2
+GOTO label3
+LABEL label2 :
+RETURN #1
+LABEL label3 :
+temp0 := numParam_ / divisorParam_
+quotient_ := temp0
+temp1 := quotient_ * divisorParam_
+IF temp1 == numParam_ GOTO label4
+GOTO label5
+LABEL label4 :
+RETURN #1
+GOTO label6
+LABEL label5 :
+RETURN #0
+LABEL label6 :
+
+FUNCTION isPrimeFunc :
+PARAM numberParam_
+divisorVar_ := #2
+IF numberParam_ <= #1 GOTO label7
+GOTO label8
+LABEL label7 :
+RETURN #0
+LABEL label8 :
+temp2 := numberParam_ / #2
+temp3 := temp2 + #1
+checkLimit_ := temp3
+LABEL label9 :
+IF divisorVar_ < checkLimit_ GOTO label10
+GOTO label11
+LABEL label10 :
+ARG divisorVar_
+ARG numberParam_
+temp4 := CALL isDivisibleBy
+IF temp4 == #1 GOTO label12
+GOTO label13
+LABEL label12 :
+RETURN #0
+LABEL label13 :
+temp5 := divisorVar_ + #1
+divisorVar_ := temp5
+GOTO label9
+LABEL label11 :
+RETURN #1
+
+FUNCTION main :
+READ temp6
+numToCheck_ := temp6
+ARG numToCheck_
+temp7 := CALL isPrimeFunc
+primeResult_ := temp7
+WRITE primeResult_
+RETURN #0

@@ -1,13 +1,13 @@
 import gdb
 
-# [Usage]: gdb [executable file] -x gdb_debug.py
+# [Usage]: gdb ./parser -x gdb_debug.py
 
 def setup_debug():
     # 设置断点并运行程序
-    gdb.execute('b /home/cookiecoolkid/Compiler/proj4/Code/assembly.c:392')
-    gdb.execute('run ../Test/inc.cmm ../Test/inc.ir ../Test/tmp/inc.s')
-    gdb.execute('layout src')
-    gdb.execute('set pagination off')
+    # gdb.execute('b lookup_symbol')
+    gdb.execute('run ../Test/Tests/inputs/A-3.cmm ../Test/Inter/A-3.ir ../Test/Output/A-3.s')
+    # gdb.execute('layout src')
+    # gdb.execute('set pagination off')
 
 # 注册调试设置函数
 gdb.execute('set confirm off')  # 关闭确认提示

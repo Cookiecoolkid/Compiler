@@ -1,0 +1,72 @@
+
+FUNCTION main :
+threshold_ := #10
+category_ := #0
+READ temp0
+num1_ := temp0
+READ temp1
+num2_ := temp1
+IF num1_ > threshold_ GOTO label3
+GOTO label1
+LABEL label3 :
+IF num2_ > #0 GOTO label0
+GOTO label1
+LABEL label0 :
+WRITE #100
+category_ := #1
+GOTO label2
+LABEL label1 :
+IF num1_ <= threshold_ GOTO label7
+GOTO label5
+LABEL label7 :
+IF num2_ < #0 GOTO label4
+GOTO label5
+LABEL label4 :
+WRITE #200
+category_ := #2
+GOTO label6
+LABEL label5 :
+WRITE #250
+category_ := #3
+LABEL label6 :
+LABEL label2 :
+IF num1_ == #0 GOTO label8
+GOTO label11
+LABEL label11 :
+IF num2_ == threshold_ GOTO label8
+GOTO label9
+LABEL label8 :
+WRITE #300
+IF category_ == #1 GOTO label12
+GOTO label14
+LABEL label14 :
+IF category_ == #3 GOTO label12
+GOTO label13
+LABEL label12 :
+WRITE #310
+LABEL label13 :
+GOTO label10
+LABEL label9 :
+WRITE #400
+IF category_ == #2 GOTO label15
+GOTO label16
+LABEL label15 :
+WRITE #410
+LABEL label16 :
+LABEL label10 :
+temp2 := num1_ + num2_
+IF temp2 > #0 GOTO label20
+GOTO label18
+LABEL label20 :
+IF num1_ > threshold_ GOTO label17
+GOTO label21
+LABEL label21 :
+IF num2_ < #0 GOTO label17
+GOTO label18
+LABEL label17 :
+WRITE #500
+GOTO label19
+LABEL label18 :
+WRITE #600
+LABEL label19 :
+RETURN #0

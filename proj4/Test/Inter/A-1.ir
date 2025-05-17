@@ -1,0 +1,25 @@
+
+FUNCTION main :
+initialVal_ := #100
+input1_ := #7
+input2_ := #12
+temp0 := input1_ + #5
+temp1 := initialVal_ / #50
+temp2 := input2_ - temp1
+temp3 := temp0 * temp2
+intermediateCalc_ := temp3
+temp4 := intermediateCalc_ + input1_
+reusedVar_ := temp4
+WRITE reusedVar_
+WRITE intermediateCalc_
+temp5 := reusedVar_ - input2_
+temp6 := temp5 * #3
+finalResult_ := temp6
+temp7 := finalResult_ / #2
+reusedVar_ := temp7
+WRITE reusedVar_
+temp8 := input2_ * #10
+lateAssignVar_ := temp8
+WRITE lateAssignVar_
+WRITE finalResult_
+RETURN #0
