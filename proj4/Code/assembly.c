@@ -13,6 +13,7 @@
 #endif
 
 extern InterSymbolTable interSymbolTable;  // 中间代码符号表
+extern AddressDescriptor* lookup_symbol(const char *var_name);  // 声明 lookup_symbol 函数
 
 char* strdup(const char* s);
 
@@ -75,84 +76,47 @@ void process_expression(char *expr, FILE *output) {
         handle_binary_op(x, y, z, op, output);
         return;
     }
+        
+    // *x = y (存储到指针指向的位置)
+    if (sscanf(expr, "*%s := %s", x, y) == 2) {
+        int rx = get_operand_reg(x, output);  // 获取指针变量的地址
+        int ry = get_operand_reg(y, output);  // 获取要存储的值
+        fprintf(output, "sw %s, 0(%s)", regName[ry], regName[rx]);
+        mips_fprintf_comment(output, "# in process_expression: *%s = %s\n", x, y);
+
+        spill_variable(x, output);
+        return;
+    }
+    
+    // x := *y (从指针指向的位置加载)
+    if (sscanf(expr, "%s := *%s", x, y) == 2) {
+        int ry = get_operand_reg(y, output);  // 获取指针变量的地址
+        int rx = get_operand_reg(x, output);  // 获取目标寄存器
+        fprintf(output, "lw %s, 0(%s)", regName[rx], regName[ry]);
+        mips_fprintf_comment(output, "# in process_expression: %s := *%s\n", x, y);
+
+        spill_variable(x, output);
+        return;
+    }
     
     // 处理基本赋值操作 x := #k
     if (sscanf(expr, "%s := #%s", x, y) == 2) {
-        int rx = get_operand_reg(y, output);
-        fprintf(output, "li %s, %s\n", regName[rx], y);
+        int rx = get_operand_reg(x, output);
+        fprintf(output, "li %s, %s", regName[rx], y);
+        mips_fprintf_comment(output, "# in process_expression: %s := #%s\n", x, y);
+
+        spill_variable(x, output);
         return;
     }
     
-    // 处理赋值 x := y
-    if (sscanf(expr, "%s := %s", x, y) == 2 && y[0] != '#' && !strchr(y, '+') && !strchr(y, '-') && !strchr(y, '*') && !strchr(y, '/')) {
+    // 处理赋值 x := y 以及 x := &y
+    if (sscanf(expr, "%s := %s", x, y) == 2) {
         int rx = get_operand_reg(x, output);
         int ry = get_operand_reg(y, output);
-        fprintf(output, "move %s, %s\n", regName[rx], regName[ry]);
-        return;
-    }
-    
-    // x := y + #k
-    if (sscanf(expr, "%s := %s + #%s", x, y, z) == 3) {
-        int rx = get_operand_reg(x, output);
-        int ry = get_operand_reg(y, output);
-        fprintf(output, "addi %s, %s, %s\n", regName[rx], regName[ry], z);
-        return;
-    }
-    
-    // x := y + z
-    if (sscanf(expr, "%s := %s + %s", x, y, z) == 3 && z[0] != '#') {
-        int rx, ry, rz;
-        assign_regs(x, y, z, &rx, &ry, &rz, output);
-        fprintf(output, "add %s, %s, %s\n", regName[rx], regName[ry], regName[rz]);
-        return;
-    }
-    
-    // x := y - #k
-    if (sscanf(expr, "%s := %s - #%s", x, y, z) == 3) {
-        int rx = get_operand_reg(x, output);
-        int ry = get_operand_reg(y, output);
-        fprintf(output, "addi %s, %s, -%s\n", regName[rx], regName[ry], z);
-        return;
-    }
-    
-    // x := y - z
-    if (sscanf(expr, "%s := %s - %s", x, y, z) == 3 && z[0] != '#') {
-        int rx, ry, rz;
-        assign_regs(x, y, z, &rx, &ry, &rz, output);
-        fprintf(output, "sub %s, %s, %s\n", regName[rx], regName[ry], regName[rz]);
-        return;
-    }
-    
-    // x := y * z
-    if (sscanf(expr, "%s := %s * %s", x, y, z) == 3) {
-        int rx, ry, rz;
-        assign_regs(x, y, z, &rx, &ry, &rz, output);
-        fprintf(output, "mul %s, %s, %s\n", regName[rx], regName[ry], regName[rz]);
-        return;
-    }
-    
-    // x := y / z
-    if (sscanf(expr, "%s := %s / %s", x, y, z) == 3) {
-        int rx, ry, rz;
-        assign_regs(x, y, z, &rx, &ry, &rz, output);
-        fprintf(output, "div %s, %s\n", regName[ry], regName[rz]);
-        fprintf(output, "mflo %s\n", regName[rx]);
-        return;
-    }
-    
-    // x := *y
-    if (sscanf(expr, "%s := *%s", x, y) == 2) {
-        int rx = get_operand_reg(x, output);
-        int ry = get_operand_reg(y, output);
-        fprintf(output, "lw %s, 0(%s)\n", regName[rx], regName[ry]);
-        return;
-    }
-    
-    // *x = y
-    if (sscanf(expr, "*%s = %s", x, y) == 2) {
-        int rx = get_operand_reg(x, output);
-        int ry = get_operand_reg(y, output);
-        fprintf(output, "sw %s, 0(%s)\n", regName[ry], regName[rx]);
+        fprintf(output, "move %s, %s", regName[rx], regName[ry]);
+        mips_fprintf_comment(output, "# in process_expression: %s := %s\n", x, y);
+
+        spill_variable(x, output);
         return;
     }
 }
@@ -193,6 +157,16 @@ void translate_to_mips(FILE *input, FILE *output) {
     while (fgets(line, sizeof(line), input)) {
         line[strcspn(line, "\n")] = 0;
         if (strlen(line) == 0) continue;
+
+        // DEC 数组声明
+        if (strncmp(line, "DEC", 3) == 0) {
+            char var_name[64];
+            int size;
+            if (sscanf(line, "DEC %s %d", var_name, &size) == 2) {
+                declare_array(var_name, size);
+                continue;
+            }
+        }
 
         // FUNCTION
         if (strstr(line, "FUNCTION") == line) {
@@ -285,7 +259,7 @@ void translate_to_mips(FILE *input, FILE *output) {
             sscanf(line, "PARAM %s", param);
             
             static int param_index = 0;
-            int reg = Allocate(param);
+            int reg = Allocate(param, output);
             fprintf(output, "lw %s, %d($fp)", regName[reg], 4 * (param_count - param_index));
             mips_fprintf_comment(output, "# PARAM %s: 读取第%d个参数\n", param, param_index + 1);
             param_index++;
@@ -314,7 +288,7 @@ void translate_to_mips(FILE *input, FILE *output) {
         
         // IF x == y GOTO z
         if (strstr(line, "IF") == line) {
-            char x[64], y[64], op[4], label[64];
+            char x[64], y[64], label[64];
             if (sscanf(line, "IF %s == %s GOTO %s", x, y, label) == 3) {
                 int rx = get_operand_reg(x, output), ry = get_operand_reg(y, output);
                 fprintf(output, "beq %s, %s, %s\n", regName[rx], regName[ry], label);
@@ -376,7 +350,7 @@ void translate_to_mips(FILE *input, FILE *output) {
             mips_fprintf_comment(output, "# READ %s: 恢复返回地址\n", var);
             
             // 将返回值存储到目标变量
-            int reg = Allocate(var);
+            int reg = Allocate(var, output);
             fprintf(output, "move %s, $v0", regName[reg]);
             mips_fprintf_comment(output, "# READ %s: 将返回值存储到%s\n", var, var);
             continue;

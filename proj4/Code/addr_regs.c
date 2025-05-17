@@ -4,6 +4,8 @@
 #include <assert.h>
 #include "addr_regs.h"
 
+#define BASE_VAR_OFFSET 256
+
 char* strdup(const char* s);
 
 // 全局变量定义
@@ -18,24 +20,12 @@ unsigned long reg_timestamp_counter = 0;
 void spill_variable(const char* var, FILE* output) {
     int reg = get_operand_reg(var, output);
     AddressDescriptor* addr_desc = ensure_symbol(var);
-    fprintf(output, "sw %s, %d($fp)\n", regName[reg], -80 -addr_desc->stack_offset);
+    fprintf(output, "sw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET -addr_desc->stack_offset);
 
     addr_desc->is_in_memory = 1;
     addr_desc->reg_index = -1;
     reg_desc[reg].is_used = 0;
     reg_desc[reg].var_name = NULL;
-}
-
-// 获取真实的变量名（去除 * 和 & 前缀）
-static const char* get_real_var_name(const char* var_name) {
-    if (var_name == NULL) return NULL;
-    
-    // 跳过前缀的 * 和 &
-    while (*var_name == '*' || *var_name == '&') {
-        var_name++;
-    }
-    
-    return var_name;
 }
 
 // 查找符号
@@ -59,7 +49,7 @@ static AddressDescriptor* lookup_symbol(const char *var_name) {
 }
 
 // 插入符号到中间代码符号表
-static void insert_symbol(const char *var_name) {
+static void insert_symbol(const char *var_name, int size) {
     if (var_name == NULL) return;
     
     // 检查符号是否已存在
@@ -70,17 +60,17 @@ static void insert_symbol(const char *var_name) {
     if (addr_desc == NULL) return;  // 内存分配失败
     
     addr_desc->var_name = strdup(var_name);
-    
     addr_desc->reg_index = -1;
     addr_desc->stack_offset = interSymbolTable.stack_offset;
-    addr_desc->is_in_memory = 0;  // 新变量初始时不在内存中
+    addr_desc->is_in_memory = 0;
+    addr_desc->size = size;      // 设置数组大小
     
-    // 更新栈偏移量
-    interSymbolTable.stack_offset += 4;  // 假设每个变量占用4字节
+    // 更新栈偏移量（数组需要对齐到4字节边界）
+    int aligned_size = size * 4;  // 向上取整到4的倍数
+    interSymbolTable.stack_offset += aligned_size;
     
     // 创建新的中间代码符号表节点
     InterSymbol *node = malloc(sizeof(InterSymbol));
-    
     node->addr_desc = addr_desc;
     node->next = interSymbolTable.head;
     interSymbolTable.head = node;
@@ -92,11 +82,23 @@ AddressDescriptor* ensure_symbol(const char* var) {
     
     AddressDescriptor* addr_desc = lookup_symbol(var);
     if (!addr_desc) {
-        insert_symbol(var);
+        insert_symbol(var, 1);  // 非数组变量，size为 1
         addr_desc = lookup_symbol(var);
     }
     return addr_desc;
 }
+
+// 声明数组
+void declare_array(const char* var_name, int size) {
+    if (var_name == NULL || size <= 0) return;
+
+    char arr_name[64];
+    snprintf(arr_name, sizeof(arr_name), "&%s", var_name);
+
+    insert_symbol(arr_name, size);
+    interSymbolTable.stack_offset += size * 4;  // 更新栈偏移量
+}
+
 
 void init_registers() {
     for (int i = 0; i < 32; ++i) {
@@ -107,26 +109,17 @@ void init_registers() {
     }
 }
 
-int Allocate(const char* var) {
-    // 1. 先找空闲寄存器
+// 查找空闲寄存器，如果没有则返回最久未使用的寄存器
+static int find_free_reg() {
+    // 先找空闲寄存器
     for (int i = 0; i < mips_reg_list_len; ++i) {
         int reg = mips_reg_list[i];
         if (!reg_desc[reg].is_used) {
-            reg_desc[reg].is_used = 1;
-            reg_desc[reg].timestamp = ++reg_timestamp_counter;
-            if (var != NULL) {  // 只有当变量名不为NULL时才设置
-                reg_desc[reg].var_name = strdup(var);
-                // 更新变量的地址描述符
-                AddressDescriptor* addr_desc = ensure_symbol(var);
-                if (addr_desc != NULL) {  // 确保地址描述符不为NULL
-                    addr_desc->reg_index = reg;
-                }
-            }
             return reg;
         }
     }
     
-    // 2. 没有空闲，找最久未用的
+    // 没有空闲，找最久未用的
     int min_time = 0x7fffffff, min_idx = -1;
     for (int i = 0; i < mips_reg_list_len; ++i) {
         int reg = mips_reg_list[i];
@@ -135,27 +128,29 @@ int Allocate(const char* var) {
             min_idx = reg;
         }
     }
+    return min_idx;
+}
+
+int Allocate(const char* var, FILE* output) {
+    int reg = find_free_reg();
     
     // 如果寄存器中已有变量，将其溢出到内存
-    if (reg_desc[min_idx].var_name != NULL) {  // 确保变量名不为NULL
-        // 更新原变量的地址描述符
-        AddressDescriptor* old_addr_desc = lookup_symbol(reg_desc[min_idx].var_name);
-        if (old_addr_desc != NULL) {  // 确保地址描述符不为NULL
-            old_addr_desc->reg_index = -1;
-            old_addr_desc->is_in_memory = 1;  // 标记变量在内存中
-        }
+    if (reg_desc[reg].var_name != NULL) {
+        spill_variable(reg_desc[reg].var_name, output);
     }
     
-    reg_desc[min_idx].timestamp = ++reg_timestamp_counter;
+    // 更新寄存器状态
+    reg_desc[reg].timestamp = ++reg_timestamp_counter;
+    reg_desc[reg].is_used = 1;
     if (var != NULL) {  // 只有当变量名不为NULL时才设置
-        reg_desc[min_idx].var_name = strdup(var);
+        reg_desc[reg].var_name = strdup(var);
         // 更新变量的地址描述符
         AddressDescriptor* addr_desc = ensure_symbol(var);
         if (addr_desc != NULL) {  // 确保地址描述符不为NULL
-            addr_desc->reg_index = min_idx;
+            addr_desc->reg_index = reg;
         }
     }
-    return min_idx;
+    return reg;
 }
 
 // 获取操作数的寄存器
@@ -164,40 +159,33 @@ int get_operand_reg(const char* operand, FILE* output) {
     
     // 处理立即数
     if (operand[0] == '#') {
-        int reg = Allocate(NULL);  // 立即数不需要变量名
+        int reg = Allocate(NULL, output);  // 立即数不需要变量名
         fprintf(output, "li %s, %s\n", regName[reg], operand + 1);
         return reg;
     }
     
     // 处理变量
-    const char* real_name = get_real_var_name(operand);
-    if (real_name == NULL) return -1;
+    if (operand == NULL) return -1;
     
     // 确保变量在符号表中
-    AddressDescriptor* addr_desc = ensure_symbol(real_name);
+    AddressDescriptor* addr_desc = ensure_symbol(operand);
     if (addr_desc == NULL) return -1;
     
-    // 查找变量是否已在寄存器
-    for (int i = 0; i < mips_reg_list_len; ++i) {
-        int reg = mips_reg_list[i];
-        if (reg_desc[reg].is_used && reg_desc[reg].var_name != NULL && 
-            strcmp(reg_desc[reg].var_name, real_name) == 0) {
-            reg_desc[reg].timestamp = ++reg_timestamp_counter;
-            return reg;
-        }
+    // 检查变量是否已在寄存器中
+    if (addr_desc->reg_index >= 0) {
+        reg_desc[addr_desc->reg_index].timestamp = ++reg_timestamp_counter;
+        return addr_desc->reg_index;
     }
     
     // 不在寄存器中，分配新寄存器
-    int reg = Allocate(real_name);
-    
+    int reg = Allocate(operand, output);
+
     // 如果变量在内存中，需要加载
-    if (addr_desc->is_in_memory) {
-        fprintf(output, "lw %s, %d($fp)\n", regName[reg], -80 -addr_desc->stack_offset);
-        addr_desc->is_in_memory = 0;
-        addr_desc->reg_index = reg;
-        reg_desc[reg].var_name = strdup(real_name);
-        reg_desc[reg].is_used = 1;
-        reg_desc[reg].timestamp = ++reg_timestamp_counter;
+    if (addr_desc->size > 1) {
+        // 对于数组，加载其基地址（栈空间地址）
+        fprintf(output, "addi %s, $fp, %d\n", regName[reg], -BASE_VAR_OFFSET - addr_desc->stack_offset);
+    } else if (addr_desc->is_in_memory) {
+        fprintf(output, "lw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET -addr_desc->stack_offset);
     }
     
     return reg;
@@ -210,5 +198,5 @@ void assign_regs(const char *result, const char *op1, const char *op2, int *r_re
     
     *r_op1 = get_operand_reg(op1, output);
     *r_op2 = get_operand_reg(op2, output);
-    *r_result = Allocate(result);
+    *r_result = Allocate(result, output);
 }

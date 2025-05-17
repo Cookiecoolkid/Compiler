@@ -27,91 +27,92 @@ subu $sp, $sp, 80# FUNCTION main: 分配栈帧
 sw $fp, 76($sp)# FUNCTION main: 保存旧帧指针
 sw $ra, 72($sp)# FUNCTION main: 保存返回地址
 addiu $fp, $sp, 80# FUNCTION main: 设置新的帧指针
-li $t0, 0
+li $t0, 0# in process_expression: totalSum_ := #0
+sw $t0, -256($fp)
 addi $sp, $sp, -4# READ temp0: 保存返回地址
 sw $ra, 0($sp)
 jal read# READ temp0: 调用read函数
 lw $ra, 0($sp)
 addi $sp, $sp, 4# READ temp0: 恢复返回地址
-move $t1, $v0# READ temp0: 将返回值存储到temp0
-move $t2, $t1
-li $t3, 1
+move $t0, $v0# READ temp0: 将返回值存储到temp0
+move $t1, $t0# in process_expression: n_ := temp0
+sw $t1, -264($fp)
+li $t1, 1# in process_expression: i_ := #1
+sw $t1, -268($fp)
 label0 :
-ble $t3, $t2, label1
+lw $t1, -268($fp)
+lw $t2, -264($fp)
+ble $t1, $t2, label1
 j label2# GOTO label2
 label1 :
-li $t4, 1
+li $t3, 1# in process_expression: j_ := #1
+sw $t3, -272($fp)
 label3 :
-ble $t4, $t2, label4
+lw $t3, -272($fp)
+ble $t3, $t2, label4
 j label5# GOTO label5
 label4 :
-li $t5, 10# in get_operand_reg: load immediate 10
-mul $t6, $t3, $t5# in handle_binary_op: temp1 := i_ * #10
-sw $t6, -100($fp)
-# in spill_variable: store temp1 to stack
-lw $t6, -100($fp)
-# in load_variable: load temp1 from stack
-add $t7, $t6, $t4# in handle_binary_op: temp2 := temp1 + j_
-sw $t7, -104($fp)
-# in spill_variable: store temp2 to stack
-lw $s0, -104($fp)
-# in load_variable: load temp2 from stack
-move $t7, $s0
-add $s1, $t3, $t4# in handle_binary_op: temp3 := i_ + j_
-sw $s1, -112($fp)
-# in spill_variable: store temp3 to stack
-lw $s2, -112($fp)
-# in load_variable: load temp3 from stack
-move $s1, $s2
-li $s3, 2# in get_operand_reg: load immediate 2
-div $s1, $s3
-mflo $s4# in handle_binary_op: temp4 := tempSum_ / #2 (get quotient)
-sw $s4, -120($fp)
-# in spill_variable: store temp4 to stack
-lw $s4, -120($fp)
-# in load_variable: load temp4 from stack
-li $s5, 2# in get_operand_reg: load immediate 2
-mul $s6, $s4, $s5# in handle_binary_op: temp5 := temp4 * #2
-sw $s6, -124($fp)
-# in spill_variable: store temp5 to stack
-lw $s6, -124($fp)
-# in load_variable: load temp5 from stack
-beq $s6, $s1, label6
+li $t4, 10
+mul $t5, $t1, $t4# in handle_binary_op: temp1 := i_ * #10
+sw $t5, -276($fp)
+lw $t5, -276($fp)
+add $t6, $t5, $t3# in handle_binary_op: temp2 := temp1 + j_
+sw $t6, -280($fp)
+lw $t7, -280($fp)
+move $t6, $t7# in process_expression: currentVal_ := temp2
+sw $t6, -284($fp)
+add $t6, $t1, $t3# in handle_binary_op: temp3 := i_ + j_
+sw $t6, -288($fp)
+lw $s0, -288($fp)
+move $t6, $s0# in process_expression: tempSum_ := temp3
+sw $t6, -292($fp)
+lw $t6, -292($fp)
+li $s1, 2
+div $t6, $s1
+mflo $s2# in handle_binary_op: temp4 := tempSum_ / #2 (get quotient)
+sw $s2, -296($fp)
+lw $s2, -296($fp)
+li $s3, 2
+mul $s4, $s2, $s3# in handle_binary_op: temp5 := temp4 * #2
+sw $s4, -300($fp)
+lw $s4, -300($fp)
+beq $s4, $t6, label6
 j label7# GOTO label7
 label6 :
-add $s7, $t0, $t7# in handle_binary_op: temp6 := totalSum_ + currentVal_
-sw $s7, -128($fp)
-# in spill_variable: store temp6 to stack
-lw $s7, -128($fp)
-# in load_variable: load temp6 from stack
-move $t0, $s7
+lw $s5, -256($fp)
+lw $s6, -284($fp)
+add $s7, $s5, $s6# in handle_binary_op: temp6 := totalSum_ + currentVal_
+sw $s7, -304($fp)
+lw $s7, -304($fp)
+move $s5, $s7# in process_expression: totalSum_ := temp6
+sw $s5, -256($fp)
 label7 :
-li $t8, 1# in get_operand_reg: load immediate 1
-add $t9, $t4, $t8# in handle_binary_op: temp7 := j_ + #1
-sw $t9, -132($fp)
-# in spill_variable: store temp7 to stack
-lw $t9, -132($fp)
-# in load_variable: load temp7 from stack
-move $t4, $t9
+li $s5, 1
+add $t8, $t3, $s5# in handle_binary_op: temp7 := j_ + #1
+sw $t8, -308($fp)
+lw $t8, -308($fp)
+move $t3, $t8# in process_expression: j_ := temp7
+sw $t3, -272($fp)
 j label3# GOTO label3
 label5 :
-li $t1, 1# in get_operand_reg: load immediate 1
-add $t2, $t3, $t1# in handle_binary_op: temp8 := i_ + #1
-sw $t2, -136($fp)
-# in spill_variable: store temp8 to stack
-lw $t2, -136($fp)
-# in load_variable: load temp8 from stack
-move $t3, $t2
+li $t3, 1
+add $t9, $t1, $t3# in handle_binary_op: temp8 := i_ + #1
+sw $t9, -312($fp)
+lw $t9, -312($fp)
+move $t1, $t9# in process_expression: i_ := temp8
+sw $t1, -268($fp)
 j label0# GOTO label0
 label2 :
-move $a0, $t0# WRITE totalSum_: 将值移动到$a0
+lw $t1, -256($fp)
+move $a0, $t1# WRITE totalSum_: 将值移动到$a0
 subu $sp, $sp, 4# WRITE totalSum_: 保存返回地址
 sw $ra, 0($sp)
 jal write# WRITE totalSum_: 调用write函数
 lw $ra, 0($sp)
 addi $sp, $sp, 4# WRITE totalSum_: 恢复返回地址
-li $t5, 0# in get_operand_reg: load immediate 0
-move $v0, $t5# RETURN #0: 设置返回值
+sw $t0, -260($fp)
+li $t0, 0
+move $v0, $t0# RETURN #0: 设置返回值
 lw $ra, -8($fp)# RETURN #0: 恢复返回地址
 lw $fp, -4($fp)# RETURN #0: 恢复帧指针
 addi $sp, $sp, 80

@@ -22,10 +22,11 @@ typedef struct {
 
 // 地址描述符
 typedef struct {
-    char *var_name;
-    int reg_index;      // -1表示不在寄存器
-    int stack_offset;
-    int is_in_memory;   // 1表示变量在内存中，0表示变量尚未写入内存
+    char *var_name;     // 变量名
+    int reg_index;      // 寄存器编号
+    int stack_offset;   // 栈偏移量
+    int is_in_memory;   // 是否在内存中
+    int size;          // 数组大小，非数组为0
 } AddressDescriptor;
 
 // 中间代码符号表节点结构体
@@ -52,12 +53,11 @@ extern int mips_callee_reg_list_len;
 
 // 函数声明
 void init_registers(void);
-int Allocate(const char* var);
-
+int Allocate(const char* var, FILE* output);
 void assign_regs(const char* result, const char* op1, const char* op2, int* r_result, int* r_op1, int* r_op2, FILE* output);
 AddressDescriptor* ensure_symbol(const char* var);
 void spill_variable(const char* var, FILE* output);
 int get_operand_reg(const char* operand, FILE* output);
-
-
+void declare_array(const char* var_name, int size);
+void spill_left_and_free_regs(int reg, FILE* output);
 #endif // ADDR_REGS_H

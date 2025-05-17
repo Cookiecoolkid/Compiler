@@ -49,16 +49,12 @@ lw $t0, 0($fp)# PARAM totalSize_: 读取第1个参数
 lw $t1, -4($fp)# PARAM outerLoopIndex_: 读取第2个参数
 sub $t2, $t0, $t1# in handle_binary_op: temp0 := totalSize_ - outerLoopIndex_
 sw $t2, -88($fp)
-# in spill_variable: store temp0 to stack
 lw $t2, -88($fp)
-# in load_variable: load temp0 from stack
-li $t3, 1# in get_operand_reg: load immediate 1
+li $t3, 1
 sub $t4, $t2, $t3# in handle_binary_op: temp1 := temp0 - #1
 sw $t4, -92($fp)
-# in spill_variable: store temp1 to stack
 lw $t5, -92($fp)
-# in load_variable: load temp1 from stack
-move $t4, $t5
+move $t4, $t5# in process_expression: limitResult_ := temp1
 move $v0, $t4# RETURN limitResult_: 设置返回值
 lw $t9, -80($fp)# RETURN limitResult_: 恢复寄存器$t9
 lw $t8, -76($fp)# RETURN limitResult_: 恢复寄存器$t8
@@ -88,221 +84,220 @@ subu $sp, $sp, 80# FUNCTION main: 分配栈帧
 sw $fp, 76($sp)# FUNCTION main: 保存旧帧指针
 sw $ra, 72($sp)# FUNCTION main: 保存返回地址
 addiu $fp, $sp, 80# FUNCTION main: 设置新的帧指针
-li $t6, 5
-li $t7, 0
-li $s0, 0
+li $t6, 5# in process_expression: arrayDataSize_ := #5
+li $t7, 0# in process_expression: outerIdx_ := #0
+li $t7, 0# in process_expression: innerIdx_ := #0
 label0 :
-blt $t7, $t6, label1
+blt $s0, $s1, label1
 j label2# GOTO label2
 label1 :
-move $s1, $s2
-li $s3, 4# in get_operand_reg: load immediate 4
-mul $s4, $t7, $s3# in handle_binary_op: temp3 := outerIdx_ * #4
-sw $s4, -120($fp)
-# in spill_variable: store temp3 to stack
-lw $s4, -120($fp)
-# in load_variable: load temp3 from stack
-add $s5, $s4, $s1# in handle_binary_op: temp4 := temp3 + temp2
-sw $s5, -124($fp)
-# in spill_variable: store temp4 to stack
+addi $s3, $fp, -100
+move $s2, $s3# in process_expression: temp2 := &sortArrayData_
+li $s4, 4
+mul $s5, $s0, $s4# in handle_binary_op: temp3 := outerIdx_ * #4
+sw $s5, -280($fp)
+lw $s5, -280($fp)
+add $s6, $s5, $s2# in handle_binary_op: temp4 := temp3 + temp2
+sw $s6, -284($fp)
 addi $sp, $sp, -4# READ temp5: 保存返回地址
 sw $ra, 0($sp)
 jal read# READ temp5: 调用read函数
 lw $ra, 0($sp)
 addi $sp, $sp, 4# READ temp5: 恢复返回地址
-move $s5, $v0# READ temp5: 将返回值存储到temp5
-lw $s6, -124($fp)
-# in load_variable: load *temp4 from stack
-move $s6, $s5
-li $s7, 1# in get_operand_reg: load immediate 1
-add $t8, $t7, $s7# in handle_binary_op: temp6 := outerIdx_ + #1
-sw $t8, -132($fp)
-# in spill_variable: store temp6 to stack
-lw $t8, -132($fp)
-# in load_variable: load temp6 from stack
-move $t7, $t8
+move $s6, $v0# READ temp5: 将返回值存储到temp5
+lw $s7, -284($fp)
+sw $s6, 0($s7)# in process_expression: *temp4 = temp5
+li $t8, 1
+add $t9, $s0, $t8# in handle_binary_op: temp6 := outerIdx_ + #1
+sw $t9, -292($fp)
+lw $t9, -292($fp)
+move $s0, $t9# in process_expression: outerIdx_ := temp6
 j label0# GOTO label0
 label2 :
-li $t7, 0
-li $t9, 1# in get_operand_reg: load immediate 1
-sub $t0, $t6, $t9# in handle_binary_op: temp7 := arrayDataSize_ - #1
-sw $t0, -136($fp)
-# in spill_variable: store temp7 to stack
-lw $t1, -136($fp)
-# in load_variable: load temp7 from stack
-move $t0, $t1
+li $t7, 0# in process_expression: outerIdx_ := #0
+sw $t0, -80($fp)
+li $t0, 1
+sw $t1, -84($fp)
+sub $t1, $s1, $t0# in handle_binary_op: temp7 := arrayDataSize_ - #1
+sw $t1, -296($fp)
+sw $t2, -88($fp)
+lw $t2, -296($fp)
+move $t1, $t2# in process_expression: outerLimit_ := temp7
 label3 :
-blt $t7, $t0, label4
+blt $s0, $t1, label4
 j label5# GOTO label5
 label4 :
-li $s0, 0
+li $t7, 0# in process_expression: innerIdx_ := #0
 subu $sp, $sp, 4# ARG outerIdx_: 压栈参数
-sw $t7, 0($sp)
+sw $s0, 0($sp)
 subu $sp, $sp, 4# ARG arrayDataSize_: 压栈参数
-sw $t6, 0($sp)
+sw $s1, 0($sp)
 jal calculateInnerLoopLimit# CALL calculateInnerLoopLimit: 调用函数
-move $t2, $v0# CALL calculateInnerLoopLimit: 保存返回值
-move $t3, $t2
+move $t3, $v0# CALL calculateInnerLoopLimit: 保存返回值
+sw $t5, -92($fp)
+move $t5, $t3# in process_expression: innerLimit_ := temp8
 label6 :
-blt $s0, $t3, label7
+sw $t4, -96($fp)
+blt $t4, $t5, label7
 j label8# GOTO label8
 label7 :
-move $t5, $s2
-li $t4, 4# in get_operand_reg: load immediate 4
-mul $s3, $s0, $t4# in handle_binary_op: temp10 := innerIdx_ * #4
-sw $t4, -156($fp)
-# in spill_variable: store temp10 to stack
-add $t4, $s3, $t5# in handle_binary_op: temp11 := temp10 + temp9
-sw $t4, -160($fp)
-# in spill_variable: store temp11 to stack
-lw $s4, -160($fp)
-# in load_variable: load temp11 from stack
-lw $t4, 0($s4)
-move $s1, $s2
-li $s6, 1# in get_operand_reg: load immediate 1
-add $s5, $s0, $s6# in handle_binary_op: temp14 := innerIdx_ + #1
-sw $s5, -172($fp)
-# in spill_variable: store temp14 to stack
-lw $s5, -172($fp)
-# in load_variable: load temp14 from stack
-li $s7, 4# in get_operand_reg: load immediate 4
-mul $t8, $s5, $s7# in handle_binary_op: temp15 := temp14 * #4
-sw $t8, -176($fp)
-# in spill_variable: store temp15 to stack
-lw $t8, -176($fp)
-# in load_variable: load temp15 from stack
-add $t9, $t8, $s1# in handle_binary_op: temp16 := temp15 + temp13
-sw $t9, -180($fp)
-# in spill_variable: store temp16 to stack
-lw $t1, -180($fp)
-# in load_variable: load temp16 from stack
-lw $t9, 0($t1)
-bgt $t4, $t9, label9
+sw $t6, -260($fp)
+move $t6, $s3# in process_expression: temp9 := &sortArrayData_
+li $s4, 4
+sw $s5, -280($fp)
+mul $s5, $t4, $s4# in handle_binary_op: temp10 := innerIdx_ * #4
+sw $s5, -320($fp)
+lw $s5, -320($fp)
+sw $s2, -276($fp)
+add $s2, $s5, $t6# in handle_binary_op: temp11 := temp10 + temp9
+sw $s2, -324($fp)
+lw $s2, -324($fp)
+sw $s7, -284($fp)
+lw $s7, 0($s2)# in process_expression: temp12 := *temp11
+sw $s6, -288($fp)
+move $s6, $s3# in process_expression: temp13 := &sortArrayData_
+li $t8, 1
+sw $t9, -292($fp)
+add $t9, $t4, $t8# in handle_binary_op: temp14 := innerIdx_ + #1
+sw $t9, -336($fp)
+lw $t9, -336($fp)
+li $t0, 4
+sw $t2, -296($fp)
+mul $t2, $t9, $t0# in handle_binary_op: temp15 := temp14 * #4
+sw $t2, -340($fp)
+lw $t2, -340($fp)
+sw $t1, -300($fp)
+add $t1, $t2, $s6# in handle_binary_op: temp16 := temp15 + temp13
+sw $t1, -344($fp)
+lw $t1, -344($fp)
+sw $t7, -264($fp)
+lw $t7, 0($t1)# in process_expression: temp17 := *temp16
+bgt $s7, $t7, label9
 j label10# GOTO label10
 label9 :
-move $t0, $s2
-li $t7, 4# in get_operand_reg: load immediate 4
-mul $t6, $s0, $t7# in handle_binary_op: temp19 := innerIdx_ * #4
-sw $t6, -192($fp)
-# in spill_variable: store temp19 to stack
-lw $t6, -192($fp)
-# in load_variable: load temp19 from stack
-add $t2, $t6, $t0# in handle_binary_op: temp20 := temp19 + temp18
-sw $t2, -196($fp)
-# in spill_variable: store temp20 to stack
-lw $t3, -196($fp)
-# in load_variable: load temp20 from stack
-lw $t2, 0($t3)
-move $s3, $t2
-move $t5, $s2
-li $s4, 4# in get_operand_reg: load immediate 4
-mul $s6, $s0, $s4# in handle_binary_op: temp23 := innerIdx_ * #4
-sw $s6, -212($fp)
-# in spill_variable: store temp23 to stack
-lw $s4, -212($fp)
-# in load_variable: load temp23 from stack
-add $s5, $s6, $t5# in handle_binary_op: temp24 := temp23 + temp22
-sw $s5, -216($fp)
-# in spill_variable: store temp24 to stack
-move $s5, $s2
-li $s7, 1# in get_operand_reg: load immediate 1
-add $t8, $s0, $s7# in handle_binary_op: temp26 := innerIdx_ + #1
-sw $t8, -224($fp)
-# in spill_variable: store temp26 to stack
-lw $t8, -224($fp)
-# in load_variable: load temp26 from stack
-li $s1, 4# in get_operand_reg: load immediate 4
-mul $t1, $t8, $s1# in handle_binary_op: temp27 := temp26 * #4
-sw $t1, -228($fp)
-# in spill_variable: store temp27 to stack
-lw $t1, -228($fp)
-# in load_variable: load temp27 from stack
-add $t4, $t1, $s5# in handle_binary_op: temp28 := temp27 + temp25
-sw $t4, -232($fp)
-# in spill_variable: store temp28 to stack
-lw $t9, -232($fp)
-# in load_variable: load temp28 from stack
-lw $t4, 0($t9)
-lw $t7, -216($fp)
-# in load_variable: load *temp24 from stack
-move $t7, $t4
-move $t6, $s2
-li $t0, 1# in get_operand_reg: load immediate 1
-add $t3, $s0, $t0# in handle_binary_op: temp31 := innerIdx_ + #1
-sw $t3, -244($fp)
-# in spill_variable: store temp31 to stack
-lw $t0, -244($fp)
-# in load_variable: load temp31 from stack
-li $s3, 4# in get_operand_reg: load immediate 4
-mul $t2, $t3, $s3# in handle_binary_op: temp32 := temp31 * #4
-sw $t2, -248($fp)
-# in spill_variable: store temp32 to stack
-lw $t2, -248($fp)
-# in load_variable: load temp32 from stack
-add $s6, $t2, $t6# in handle_binary_op: temp33 := temp32 + temp30
-sw $s6, -252($fp)
-# in spill_variable: store temp33 to stack
-lw $s6, -252($fp)
-# in load_variable: load *temp33 from stack
-lw $s4, -204($fp)
-# in load_variable: load swapHolder_ from stack
-move $s6, $s4
+sw $s0, -268($fp)
+move $s0, $s3# in process_expression: temp18 := &sortArrayData_
+sw $s1, -272($fp)
+li $s1, 4
+sw $t3, -304($fp)
+mul $t3, $t4, $s1# in handle_binary_op: temp19 := innerIdx_ * #4
+sw $t3, -356($fp)
+lw $t3, -356($fp)
+sw $t5, -308($fp)
+add $t5, $t3, $s0# in handle_binary_op: temp20 := temp19 + temp18
+sw $t5, -360($fp)
+lw $t5, -360($fp)
+lw $s4, 0($t5)# in process_expression: temp21 := *temp20
+sw $s5, -320($fp)
+move $s5, $s4# in process_expression: swapHolder_ := temp21
+sw $t6, -316($fp)
+move $t6, $s3# in process_expression: temp22 := &sortArrayData_
+sw $s2, -324($fp)
+li $s2, 4
+mul $t8, $t4, $s2# in handle_binary_op: temp23 := innerIdx_ * #4
+sw $t8, -376($fp)
+lw $t8, -376($fp)
+sw $t9, -336($fp)
+add $t9, $t8, $t6# in handle_binary_op: temp24 := temp23 + temp22
+sw $t9, -380($fp)
+move $t9, $s3# in process_expression: temp25 := &sortArrayData_
+li $t0, 1
+sw $t2, -340($fp)
+add $t2, $t4, $t0# in handle_binary_op: temp26 := innerIdx_ + #1
+sw $t2, -388($fp)
+lw $t2, -388($fp)
+sw $s6, -332($fp)
+li $s6, 4
+sw $t1, -344($fp)
+mul $t1, $t2, $s6# in handle_binary_op: temp27 := temp26 * #4
+sw $t1, -392($fp)
+lw $t1, -392($fp)
+sw $s7, -328($fp)
+add $s7, $t1, $t9# in handle_binary_op: temp28 := temp27 + temp25
+sw $s7, -396($fp)
+lw $s7, -396($fp)
+sw $t7, -348($fp)
+lw $t7, 0($s7)# in process_expression: temp29 := *temp28
+lw $s1, -380($fp)
+sw $t7, 0($s1)# in process_expression: *temp24 = temp29
+sw $t3, -356($fp)
+move $t3, $s3# in process_expression: temp30 := &sortArrayData_
+sw $s0, -352($fp)
+li $s0, 1
+sw $t5, -360($fp)
+add $t5, $t4, $s0# in handle_binary_op: temp31 := innerIdx_ + #1
+sw $t5, -408($fp)
+lw $t5, -408($fp)
+sw $s5, -368($fp)
+li $s5, 4
+sw $s4, -364($fp)
+mul $s4, $t5, $s5# in handle_binary_op: temp32 := temp31 * #4
+sw $s4, -412($fp)
+lw $s4, -412($fp)
+add $s2, $s4, $t3# in handle_binary_op: temp33 := temp32 + temp30
+sw $s2, -416($fp)
+lw $s2, -416($fp)
+sw $t8, -376($fp)
+lw $t8, -368($fp)
+sw $t8, 0($s2)# in process_expression: *temp33 = swapHolder_
 label10 :
-li $t5, 1# in get_operand_reg: load immediate 1
-add $s7, $s0, $t5# in handle_binary_op: temp34 := innerIdx_ + #1
-sw $t5, -256($fp)
-# in spill_variable: store temp34 to stack
-move $s0, $s7
+sw $t6, -372($fp)
+li $t6, 1
+add $t0, $t4, $t6# in handle_binary_op: temp34 := innerIdx_ + #1
+sw $t0, -420($fp)
+lw $t0, -420($fp)
+move $t4, $t0# in process_expression: innerIdx_ := temp34
 j label6# GOTO label6
 label8 :
-lw $t5, -104($fp)
-# in load_variable: load outerIdx_ from stack
-li $t8, 1# in get_operand_reg: load immediate 1
-add $s1, $t5, $t8# in handle_binary_op: temp35 := outerIdx_ + #1
-sw $s1, -260($fp)
-# in spill_variable: store temp35 to stack
-lw $s1, -260($fp)
-# in load_variable: load temp35 from stack
-move $t5, $s1
+sw $t2, -388($fp)
+lw $t2, -268($fp)
+li $s6, 1
+sw $t1, -392($fp)
+add $t1, $t2, $s6# in handle_binary_op: temp35 := outerIdx_ + #1
+sw $t1, -424($fp)
+lw $t1, -424($fp)
+move $t2, $t1# in process_expression: outerIdx_ := temp35
 j label3# GOTO label3
 label5 :
-li $t5, 0
+sw $t9, -384($fp)
+lw $t9, -264($fp)
+li $t9, 0# in process_expression: outerIdx_ := #0
 label11 :
-lw $t1, -100($fp)
-# in load_variable: load arrayDataSize_ from stack
-blt $t5, $t1, label12
+sw $s7, -396($fp)
+lw $s7, -272($fp)
+blt $t2, $s7, label12
 j label13# GOTO label13
 label12 :
-move $s5, $s2
-li $t9, 4# in get_operand_reg: load immediate 4
-mul $t7, $t5, $t9# in handle_binary_op: temp37 := outerIdx_ * #4
-sw $t7, -268($fp)
-# in spill_variable: store temp37 to stack
-lw $t7, -268($fp)
-# in load_variable: load temp37 from stack
-add $t4, $t7, $s5# in handle_binary_op: temp38 := temp37 + temp36
-sw $t4, -272($fp)
-# in spill_variable: store temp38 to stack
-lw $t3, -272($fp)
-# in load_variable: load temp38 from stack
-lw $t4, 0($t3)
-move $a0, $t4# WRITE temp39: 将值移动到$a0
+sw $s1, -380($fp)
+move $s1, $s3# in process_expression: temp36 := &sortArrayData_
+sw $t7, -400($fp)
+li $t7, 4
+mul $s0, $t2, $t7# in handle_binary_op: temp37 := outerIdx_ * #4
+sw $s0, -432($fp)
+lw $s0, -432($fp)
+sw $t5, -408($fp)
+add $t5, $s0, $s1# in handle_binary_op: temp38 := temp37 + temp36
+sw $t5, -436($fp)
+lw $t5, -436($fp)
+lw $s5, 0($t5)# in process_expression: temp39 := *temp38
+move $a0, $s5# WRITE temp39: 将值移动到$a0
 subu $sp, $sp, 4# WRITE temp39: 保存返回地址
 sw $ra, 0($sp)
 jal write# WRITE temp39: 调用write函数
 lw $ra, 0($sp)
 addi $sp, $sp, 4# WRITE temp39: 恢复返回地址
-li $t0, 1# in get_operand_reg: load immediate 1
-add $s3, $t5, $t0# in handle_binary_op: temp40 := outerIdx_ + #1
-sw $s3, -280($fp)
-# in spill_variable: store temp40 to stack
-lw $t0, -280($fp)
-# in load_variable: load temp40 from stack
-move $t5, $s3
+sw $s4, -412($fp)
+li $s4, 1
+sw $t3, -404($fp)
+add $t3, $t2, $s4# in handle_binary_op: temp40 := outerIdx_ + #1
+sw $t3, -444($fp)
+lw $t3, -444($fp)
+move $t2, $t3# in process_expression: outerIdx_ := temp40
 j label11# GOTO label11
 label13 :
-li $t2, 0# in get_operand_reg: load immediate 0
-move $v0, $t2# RETURN #0: 设置返回值
+sw $s2, -416($fp)
+li $s2, 0
+move $v0, $s2# RETURN #0: 设置返回值
 lw $ra, -8($fp)# RETURN #0: 恢复返回地址
 lw $fp, -4($fp)# RETURN #0: 恢复帧指针
 addi $sp, $sp, 80

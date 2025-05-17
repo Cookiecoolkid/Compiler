@@ -46,16 +46,14 @@ sw $s7, -72($fp)# FUNCTION processHelper: 保存寄存器 $s7
 sw $t8, -76($fp)# FUNCTION processHelper: 保存寄存器 $t8
 sw $t9, -80($fp)# FUNCTION processHelper: 保存寄存器 $t9
 lw $t0, 0($fp)# PARAM val_: 读取第1个参数
-li $t1, 0# in get_operand_reg: load immediate 0
+li $t1, 0
 blt $t0, $t1, label0
 j label1# GOTO label1
 label0 :
-li $t2, 2# in get_operand_reg: load immediate 2
+li $t2, 2
 mul $t3, $t0, $t2# in handle_binary_op: temp0 := val_ * #2
-sw $t3, -84($fp)
-# in spill_variable: store temp0 to stack
-lw $t3, -84($fp)
-# in load_variable: load temp0 from stack
+sw $t3, -260($fp)
+lw $t3, -260($fp)
 move $v0, $t3# RETURN temp0: 设置返回值
 lw $t9, -80($fp)# RETURN temp0: 恢复寄存器$t9
 lw $t8, -76($fp)# RETURN temp0: 恢复寄存器$t8
@@ -81,12 +79,10 @@ addi $sp, $sp, 80
 jr $ra
 
 label1 :
-li $t4, 10# in get_operand_reg: load immediate 10
+li $t4, 10
 add $t5, $t0, $t4# in handle_binary_op: temp1 := val_ + #10
-sw $t5, -88($fp)
-# in spill_variable: store temp1 to stack
-lw $t5, -88($fp)
-# in load_variable: load temp1 from stack
+sw $t5, -264($fp)
+lw $t5, -264($fp)
 move $v0, $t5# RETURN temp1: 设置返回值
 lw $t9, -80($fp)# RETURN temp1: 恢复寄存器$t9
 lw $t8, -76($fp)# RETURN temp1: 恢复寄存器$t8
@@ -135,11 +131,11 @@ sw $s7, -72($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s7
 sw $t8, -76($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t8
 sw $t9, -80($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t9
 lw $t6, -4($fp)# PARAM n_: 读取第2个参数
-li $t7, 0# in get_operand_reg: load immediate 0
+li $t7, 0
 ble $t6, $t7, label2
 j label3# GOTO label3
 label2 :
-li $s0, 0# in get_operand_reg: load immediate 0
+li $s0, 0
 move $v0, $s0# RETURN #0: 设置返回值
 lw $t9, -80($fp)# RETURN #0: 恢复寄存器$t9
 lw $t8, -76($fp)# RETURN #0: 恢复寄存器$t8
@@ -170,23 +166,23 @@ subu $sp, $sp, 4# ARG n_: 压栈参数
 sw $t6, 0($sp)
 jal processHelper# CALL processHelper: 调用函数
 move $s1, $v0# CALL processHelper: 保存返回值
-move $s2, $s1
-li $s3, 2# in get_operand_reg: load immediate 2
-sub $s4, $t6, $s3# in handle_binary_op: temp3 := n_ - #2
-sw $s4, -104($fp)
-# in spill_variable: store temp3 to stack
-lw $s4, -104($fp)
-# in load_variable: load temp3 from stack
+move $s2, $s1# in process_expression: helperVal_ := temp2
+sw $s2, -276($fp)
+li $s2, 2
+sub $s3, $t6, $s2# in handle_binary_op: temp3 := n_ - #2
+sw $s3, -280($fp)
+lw $s3, -280($fp)
 subu $sp, $sp, 4# ARG temp3: 压栈参数
-sw $s4, 0($sp)
+sw $s3, 0($sp)
 jal recursiveWithHelperCall# CALL recursiveWithHelperCall: 调用函数
-move $s5, $v0# CALL recursiveWithHelperCall: 保存返回值
-move $s6, $s5
-add $s7, $s2, $s6# in handle_binary_op: temp5 := helperVal_ + recursiveVal_
-sw $s7, -116($fp)
-# in spill_variable: store temp5 to stack
-lw $s7, -116($fp)
-# in load_variable: load temp5 from stack
+move $s4, $v0# CALL recursiveWithHelperCall: 保存返回值
+move $s5, $s4# in process_expression: recursiveVal_ := temp4
+sw $s5, -288($fp)
+lw $s5, -276($fp)
+lw $s6, -288($fp)
+add $s7, $s5, $s6# in handle_binary_op: temp5 := helperVal_ + recursiveVal_
+sw $s7, -292($fp)
+lw $s7, -292($fp)
 move $v0, $s7# RETURN temp5: 设置返回值
 lw $t9, -80($fp)# RETURN temp5: 恢复寄存器$t9
 lw $t8, -76($fp)# RETURN temp5: 恢复寄存器$t8
@@ -223,19 +219,24 @@ jal read# READ temp6: 调用read函数
 lw $ra, 0($sp)
 addi $sp, $sp, 4# READ temp6: 恢复返回地址
 move $t8, $v0# READ temp6: 将返回值存储到temp6
-move $t9, $t8
+move $t9, $t8# in process_expression: input_ := temp6
+sw $t9, -300($fp)
+lw $t9, -300($fp)
 subu $sp, $sp, 4# ARG input_: 压栈参数
 sw $t9, 0($sp)
 jal recursiveWithHelperCall# CALL recursiveWithHelperCall: 调用函数
 move $t1, $v0# CALL recursiveWithHelperCall: 保存返回值
-move $t2, $t1
+move $t2, $t1# in process_expression: finalResult_ := temp7
+sw $t2, -308($fp)
+lw $t2, -308($fp)
 move $a0, $t2# WRITE finalResult_: 将值移动到$a0
 subu $sp, $sp, 4# WRITE finalResult_: 保存返回地址
 sw $ra, 0($sp)
 jal write# WRITE finalResult_: 调用write函数
 lw $ra, 0($sp)
 addi $sp, $sp, 4# WRITE finalResult_: 恢复返回地址
-li $t3, 0# in get_operand_reg: load immediate 0
+sw $t3, -260($fp)
+li $t3, 0
 move $v0, $t3# RETURN #0: 设置返回值
 lw $ra, -8($fp)# RETURN #0: 恢复返回地址
 lw $fp, -4($fp)# RETURN #0: 恢复帧指针
