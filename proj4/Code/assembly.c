@@ -149,7 +149,7 @@ void process_expression(char *expr, FILE *output) {
     if (sscanf(expr, "*%s := %s", x, y) == 2) {
         int rx = get_operand_reg(x, output);  // 获取指针变量的地址
         int ry = get_operand_reg(y, output);  // 获取要存储的值
-        fprintf(output, "sw %s, 0(%s)", regName[ry], regName[rx]);
+        fprintf(output, "sw %s, 4(%s)", regName[ry], regName[rx]);
         mips_fprintf_comment(output, "# in process_expression: *%s = %s\n", x, y);
 
         spill_variable(x, output);
@@ -160,7 +160,7 @@ void process_expression(char *expr, FILE *output) {
     if (sscanf(expr, "%s := *%s", x, y) == 2) {
         int ry = get_operand_reg(y, output);  // 获取指针变量的地址
         int rx = get_operand_reg(x, output);  // 获取目标寄存器
-        fprintf(output, "lw %s, 0(%s)", regName[rx], regName[ry]);
+        fprintf(output, "lw %s, 4(%s)", regName[rx], regName[ry]);
         mips_fprintf_comment(output, "# in process_expression: %s := *%s\n", x, y);
 
         spill_variable(x, output);
@@ -232,7 +232,7 @@ void translate_to_mips(FILE *input, FILE *output) {
             char var_name[64];
             int size;
             if (sscanf(line, "DEC %s %d", var_name, &size) == 2) {
-                declare_array(var_name, size);
+                declare_array(var_name, size, output);
                 continue;
             }
         }
@@ -243,8 +243,11 @@ void translate_to_mips(FILE *input, FILE *output) {
             sscanf(line, "FUNCTION %s :", func_name);
             strcpy(current_function, func_name);
             
-            // 是否加上 interSymbolTable 的栈偏移量？
-            frame_size = 8 + 4 * mips_reg_list_len + interSymbolTable.stack_offset;
+            // 计算固定保存区域大小（$ra, $fp, 寄存器等）
+            int fixed_size = 8 + 4 * mips_reg_list_len;  // $ra, $fp, 寄存器保存区域
+            frame_size = fixed_size;  // 总栈帧大小
+            // 重置栈偏移量
+            interSymbolTable.stack_offset = frame_size;
             
             fprintf(output, "%s:\n", func_name);
             
@@ -385,8 +388,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             sscanf(line, "READ %s", var);
             
             // 保存返回地址
-            // fprintf(output, "addi $sp, $sp, -4");
-            // mips_fprintf_comment(output, "# READ %s: 保存返回地址\n", var);
+            fprintf(output, "addi $sp, $sp, -4");
+            mips_fprintf_comment(output, "# READ %s: 保存返回地址\n", var);
             fprintf(output, "sw $ra, 0($sp)\n");
             
             // 调用read函数
@@ -395,8 +398,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             
             // 恢复返回地址
             fprintf(output, "lw $ra, 0($sp)\n");
-            // fprintf(output, "addi $sp, $sp, 4");
-            // mips_fprintf_comment(output, "# READ %s: 恢复返回地址\n", var);
+            fprintf(output, "addi $sp, $sp, 4");
+            mips_fprintf_comment(output, "# READ %s: 恢复返回地址\n", var);
             
             // 将返回值存储到目标变量
             int reg = Allocate(var, output);
@@ -418,8 +421,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             mips_fprintf_comment(output, "# WRITE %s: 将值移动到$a0\n", var);
             
             // 保存返回地址
-            // fprintf(output, "subu $sp, $sp, 4");
-            // mips_fprintf_comment(output, "# WRITE %s: 保存返回地址\n", var);
+            fprintf(output, "subu $sp, $sp, 4");
+            mips_fprintf_comment(output, "# WRITE %s: 保存返回地址\n", var);
             fprintf(output, "sw $ra, 0($sp)\n");
             
             // 调用write函数
@@ -428,8 +431,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             
             // 恢复返回地址
             fprintf(output, "lw $ra, 0($sp)\n");
-            // fprintf(output, "addi $sp, $sp, 4");
-            // mips_fprintf_comment(output, "# WRITE %s: 恢复返回地址\n", var);
+            fprintf(output, "addi $sp, $sp, 4");
+            mips_fprintf_comment(output, "# WRITE %s: 恢复返回地址\n", var);
             continue;
         }
         

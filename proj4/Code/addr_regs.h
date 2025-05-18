@@ -27,6 +27,7 @@ typedef struct {
     int stack_offset;   // 栈偏移量
     int is_in_memory;   // 是否在内存中
     int size;          // 数组大小，非数组为0
+    int is_array;      // 是否是数组
 } AddressDescriptor;
 
 // 中间代码符号表节点结构体
@@ -55,9 +56,9 @@ extern int mips_callee_reg_list_len;
 void init_registers(void);
 int Allocate(const char* var, FILE* output);
 void assign_regs(const char* result, const char* op1, const char* op2, int* r_result, int* r_op1, int* r_op2, FILE* output);
-AddressDescriptor* ensure_symbol(const char* var);
+AddressDescriptor* ensure_symbol(const char* var, FILE* output);
 void spill_variable(const char* var, FILE* output);
 int get_operand_reg(const char* operand, FILE* output);
-void declare_array(const char* var_name, int size);
-void spill_left_and_free_regs(int reg, FILE* output);
+void declare_array(const char* var_name, int size, FILE* output);
+
 #endif // ADDR_REGS_H

@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "addr_regs.h"
 
-#define BASE_VAR_OFFSET (2 * 80)
+#define BASE_VAR_OFFSET 0  // 不再需要基础偏移，因为现在都是相对于$fp的偏移
 
 char* strdup(const char* s);
 
@@ -30,7 +30,7 @@ void spill_variable(const char* var, FILE* output) {
     // 如果变量在寄存器中，将其写回内存
     if (addr_desc->reg_index >= 0) {
         int reg = addr_desc->reg_index;
-        fprintf(output, "sw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET - addr_desc->stack_offset);
+        fprintf(output, "sw %s, %d($fp)\n", regName[reg],-BASE_VAR_OFFSET -addr_desc->stack_offset);
         
         // 更新地址描述符
         addr_desc->is_in_memory = 1;
@@ -63,7 +63,7 @@ static AddressDescriptor* lookup_symbol(const char *var_name) {
 }
 
 // 插入符号到中间代码符号表
-static void insert_symbol(const char *var_name, int size) {
+static void insert_symbol(const char *var_name, int size, int is_array, FILE* output) {
     if (var_name == NULL) return;
     
     // 检查符号是否已存在
@@ -73,15 +73,19 @@ static void insert_symbol(const char *var_name, int size) {
     AddressDescriptor *addr_desc = malloc(sizeof(AddressDescriptor));
     if (addr_desc == NULL) return;  // 内存分配失败
     
+    // 更新栈偏移量（数组需要对齐到4字节边界）
+    int aligned_size = size * 4;  // 向上取整到4的倍数
+    interSymbolTable.stack_offset += aligned_size;
+
+    // 先更新（扩充stack空间） 后分配
+    fprintf(output, "subu $sp, $sp, %d\n", aligned_size);
+    
     addr_desc->var_name = strdup(var_name);
     addr_desc->reg_index = -1;
     addr_desc->stack_offset = interSymbolTable.stack_offset;
     addr_desc->is_in_memory = 0;
     addr_desc->size = size;      // 设置数组大小
-    
-    // 更新栈偏移量（数组需要对齐到4字节边界）
-    int aligned_size = size * 4;
-    interSymbolTable.stack_offset += aligned_size;
+    addr_desc->is_array = is_array;  // 设置是否是数组
     
     // 创建新的中间代码符号表节点
     InterSymbol *node = malloc(sizeof(InterSymbol));
@@ -91,28 +95,26 @@ static void insert_symbol(const char *var_name, int size) {
 }
 
 // 确保变量在符号表中，并返回其地址描述符
-AddressDescriptor* ensure_symbol(const char* var) {
+AddressDescriptor* ensure_symbol(const char* var, FILE* output) {
     if (var == NULL) return NULL;
     
     AddressDescriptor* addr_desc = lookup_symbol(var);
     if (!addr_desc) {
-        insert_symbol(var, 1);  // 非数组变量，size为 1
+        insert_symbol(var, 1, 0, output);  // 非数组变量，size为 1
         addr_desc = lookup_symbol(var);
     }
     return addr_desc;
 }
 
 // 声明数组
-void declare_array(const char* var_name, int size) {
+void declare_array(const char* var_name, int size, FILE* output) {
     if (var_name == NULL || size <= 0) return;
 
     char arr_name[64];
     snprintf(arr_name, sizeof(arr_name), "&%s", var_name);
-
-    insert_symbol(arr_name, size);
-    // interSymbolTable.stack_offset += size * 4;  // 更新栈偏移量
+    insert_symbol(arr_name, 1, 1, output);  // 数组变量，size为数组大小
+    insert_symbol(var_name, size, 0, output);  // 数组数据需要size个字的空间
 }
-
 
 void init_registers() {
     for (int i = 0; i < 32; ++i) {
@@ -159,7 +161,7 @@ int Allocate(const char* var, FILE* output) {
     if (var != NULL) {  // 只有当变量名不为NULL时才设置
         reg_desc[reg].var_name = strdup(var);
         // 更新变量的地址描述符
-        AddressDescriptor* addr_desc = ensure_symbol(var);
+        AddressDescriptor* addr_desc = ensure_symbol(var, output);
         if (addr_desc != NULL) {  // 确保地址描述符不为NULL
             addr_desc->reg_index = reg;
         }
@@ -179,7 +181,7 @@ int get_operand_reg(const char* operand, FILE* output) {
     }
     
     // 确保变量在符号表中
-    AddressDescriptor* addr_desc = ensure_symbol(operand);
+    AddressDescriptor* addr_desc = ensure_symbol(operand, output);
     if (addr_desc == NULL) return -1;
     
     // 检查变量是否已在寄存器中
@@ -193,12 +195,12 @@ int get_operand_reg(const char* operand, FILE* output) {
     }
     
     // 如果变量在内存中，需要加载
-    if (addr_desc->size > 1) {
+    if (addr_desc->is_array) {
         // 对于数组，加载其基地址（栈空间地址）
-        fprintf(output, "addi %s, $fp, %d\n", regName[reg], -BASE_VAR_OFFSET - addr_desc->stack_offset);
+        fprintf(output, "addi %s, $fp, %d\n", regName[reg], -BASE_VAR_OFFSET -addr_desc->stack_offset);
     } else if (addr_desc->is_in_memory){
         // 对于普通变量，加载其值
-        fprintf(output, "lw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET - addr_desc->stack_offset);
+        fprintf(output, "lw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET -addr_desc->stack_offset);
     }
     
     return reg;
