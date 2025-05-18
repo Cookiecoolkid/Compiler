@@ -4,9 +4,12 @@
 #include <assert.h>
 #include "addr_regs.h"
 
-#define BASE_VAR_OFFSET 256
+#define BASE_VAR_OFFSET (2 * 80)
 
 char* strdup(const char* s);
+
+// 函数前向声明
+static AddressDescriptor* lookup_symbol(const char *var_name);
 
 // 全局变量定义
 InterSymbolTable interSymbolTable = {NULL, 0};  // 初始化 interSymbolTable
@@ -18,14 +21,25 @@ unsigned long reg_timestamp_counter = 0;
 
 // 将变量溢出到内存
 void spill_variable(const char* var, FILE* output) {
-    int reg = get_operand_reg(var, output);
-    AddressDescriptor* addr_desc = ensure_symbol(var);
-    fprintf(output, "sw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET -addr_desc->stack_offset);
-
-    addr_desc->is_in_memory = 1;
-    addr_desc->reg_index = -1;
-    reg_desc[reg].is_used = 0;
-    reg_desc[reg].var_name = NULL;
+    if (var == NULL) return;
+    
+    // 获取变量的地址描述符
+    AddressDescriptor* addr_desc = lookup_symbol(var);
+    if (addr_desc == NULL) return;
+    
+    // 如果变量在寄存器中，将其写回内存
+    if (addr_desc->reg_index >= 0) {
+        int reg = addr_desc->reg_index;
+        fprintf(output, "sw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET - addr_desc->stack_offset);
+        
+        // 更新地址描述符
+        addr_desc->is_in_memory = 1;
+        addr_desc->reg_index = -1;
+        
+        // 清理寄存器描述符
+        reg_desc[reg].is_used = 0;
+        reg_desc[reg].var_name = NULL;
+    }
 }
 
 // 查找符号
@@ -164,28 +178,27 @@ int get_operand_reg(const char* operand, FILE* output) {
         return reg;
     }
     
-    // 处理变量
-    if (operand == NULL) return -1;
-    
     // 确保变量在符号表中
     AddressDescriptor* addr_desc = ensure_symbol(operand);
     if (addr_desc == NULL) return -1;
     
     // 检查变量是否已在寄存器中
+    int reg = -1;
     if (addr_desc->reg_index >= 0) {
         reg_desc[addr_desc->reg_index].timestamp = ++reg_timestamp_counter;
-        return addr_desc->reg_index;
+        reg = addr_desc->reg_index;
+    } else {
+        // 如果变量不在寄存器中，分配新寄存器
+        reg = Allocate(operand, output);
     }
     
-    // 不在寄存器中，分配新寄存器
-    int reg = Allocate(operand, output);
-
     // 如果变量在内存中，需要加载
     if (addr_desc->size > 1) {
         // 对于数组，加载其基地址（栈空间地址）
         fprintf(output, "addi %s, $fp, %d\n", regName[reg], -BASE_VAR_OFFSET - addr_desc->stack_offset);
-    } else if (addr_desc->is_in_memory) {
-        fprintf(output, "lw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET -addr_desc->stack_offset);
+    } else if (addr_desc->is_in_memory){
+        // 对于普通变量，加载其值
+        fprintf(output, "lw %s, %d($fp)\n", regName[reg], -BASE_VAR_OFFSET - addr_desc->stack_offset);
     }
     
     return reg;

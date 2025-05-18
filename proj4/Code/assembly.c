@@ -12,6 +12,9 @@
 #define mips_fprintf_comment(fp, fmt, ...) fprintf(fp, "\n")
 #endif
 
+#define MAX_LINES 2048  // 最大中间代码行数
+#define MAX_LINE_LENGTH 256  // 每行最大长度
+
 extern InterSymbolTable interSymbolTable;  // 中间代码符号表
 extern AddressDescriptor* lookup_symbol(const char *var_name);  // 声明 lookup_symbol 函数
 
@@ -21,6 +24,65 @@ extern int mips_reg_list[];
 extern int mips_reg_list_len;
 
 int frame_size = 0;
+
+// 存储中间代码的结构
+typedef struct {
+    char lines[MAX_LINES][MAX_LINE_LENGTH];
+    int count;
+} IntermediateCode;
+
+// 全局变量
+static IntermediateCode ic;  // 存储所有中间代码
+
+// 读取所有中间代码到数组
+static void read_all_intermediate_code(FILE* input, IntermediateCode* ic) {
+    ic->count = 0;
+    while (fgets(ic->lines[ic->count], MAX_LINE_LENGTH, input) && ic->count < MAX_LINES - 1) {
+        ic->lines[ic->count][strcspn(ic->lines[ic->count], "\n")] = 0;  // 移除换行符
+        if (strlen(ic->lines[ic->count]) > 0) {  // 忽略空行
+            ic->count++;
+        }
+    }
+}
+
+// 处理函数参数
+static int handle_function_params(const char* func_name, int start_line, FILE* output) {
+    int param_count = 0;
+    char param_name[64];
+    int i = start_line;
+    
+    // 计算参数数量并处理每个参数
+    while (i < ic.count && strncmp(ic.lines[i], "PARAM", 5) == 0) {
+        sscanf(ic.lines[i], "PARAM %s", param_name);
+        int reg = Allocate(param_name, output);
+        fprintf(output, "lw %s, %d($fp)", regName[reg], 4 * param_count);
+        mips_fprintf_comment(output, "# PARAM %s: 读取第%d个参数\n", param_name, param_count + 1);
+        param_count++;
+        i++;
+    }
+    
+    return i;  // 返回处理完参数后的行号
+}
+
+// 处理函数调用参数
+static int handle_function_args(const char* func_name, int start_line, FILE* output) {
+    int arg_count = 0;
+    char arg_name[64];
+    int i = start_line;
+    
+    // 向前查找所有ARG指令
+    while (i >= 0 && strncmp(ic.lines[i], "ARG", 3) == 0) {
+        sscanf(ic.lines[i], "ARG %s", arg_name);
+        int reg = get_operand_reg(arg_name, output);
+        fprintf(output, "subu $sp, $sp, 4\n");
+        fprintf(output, "sw %s, 0($sp)", regName[reg]);
+        mips_fprintf_comment(output, "# ARG %s: 压栈参数\n", arg_name);
+        arg_count++;
+        i--;
+    }
+    
+    return arg_count * 4;  // 返回参数占用的栈空间大小
+}
 
 // MIPS寄存器名称数组定义
 char* regName[MIPS_REGS_NUM] = {
@@ -146,18 +208,19 @@ static void add_assembly_header(FILE *output) {
 }
 
 void translate_to_mips(FILE *input, FILE *output) {
-    char line[256];
     char current_function[64] = "";
-
-    int param_count = 0;
+    
+    // 读取所有中间代码
+    read_all_intermediate_code(input, &ic);
     
     add_assembly_header(output);
     init_registers();  // 初始化寄存器
     
-    while (fgets(line, sizeof(line), input)) {
-        line[strcspn(line, "\n")] = 0;
-        if (strlen(line) == 0) continue;
-
+    // 处理所有指令
+    for (int i = 0; i < ic.count; i++) {
+        char line[MAX_LINE_LENGTH];
+        strcpy(line, ic.lines[i]);
+        
         // DEC 数组声明
         if (strncmp(line, "DEC", 3) == 0) {
             char var_name[64];
@@ -174,8 +237,9 @@ void translate_to_mips(FILE *input, FILE *output) {
             sscanf(line, "FUNCTION %s :", func_name);
             strcpy(current_function, func_name);
             
-            frame_size = 8 + 4 * mips_reg_list_len;
-
+            // 是否加上 interSymbolTable 的栈偏移量？
+            frame_size = 8 + 4 * mips_reg_list_len + interSymbolTable.stack_offset;
+            
             fprintf(output, "%s:\n", func_name);
             
             // 被调用者序言
@@ -190,15 +254,38 @@ void translate_to_mips(FILE *input, FILE *output) {
             
             // 保存所有寄存器
             if (strcmp(current_function, "main") != 0) {
-                for (int i = 0; i < mips_reg_list_len; i++) {
-                    int reg = mips_reg_list[i];
- 
-                    fprintf(output, "sw %s, %d($fp)", regName[reg], -12 - 4 * i);
+                for (int j = 0; j < mips_reg_list_len; j++) {
+                    int reg = mips_reg_list[j];
+                    fprintf(output, "sw %s, %d($fp)", regName[reg], -12 - 4 * j);
                     mips_fprintf_comment(output, "# FUNCTION %s: 保存寄存器 %s\n", func_name, regName[reg]);
-                    
                 }
             }
             
+            // 处理函数参数
+            i = handle_function_params(func_name, i + 1, output) - 1;
+            continue;
+        }
+        
+        // CALL
+        if (strstr(line, ":= CALL") != NULL) {
+            char result[64], callee[64];
+            sscanf(line, "%s := CALL %s", result, callee);
+            
+            // 处理函数调用参数（从当前行开始向前查找）
+            int arg_size = handle_function_args(callee, i - 1, output);
+            
+            fprintf(output, "jal %s", callee);
+            mips_fprintf_comment(output, "# CALL %s: 调用函数\n", callee);
+            
+            // 恢复栈指针
+            if (arg_size > 0) {
+                fprintf(output, "addi $sp, $sp, %d", arg_size);
+                mips_fprintf_comment(output, "# CALL %s: 恢复栈指针\n", callee);
+            }
+            
+            int reg = get_operand_reg(result, output);
+            fprintf(output, "move %s, $v0", regName[reg]);
+            mips_fprintf_comment(output, "# CALL %s: 保存返回值\n", callee);
             continue;
         }
         
@@ -214,12 +301,10 @@ void translate_to_mips(FILE *input, FILE *output) {
 
             if (strcmp(current_function, "main") != 0) {
                 // 恢复所有寄存器
-                for (int i = mips_reg_list_len - 1; i >= 0; i--) {
-                    int reg = mips_reg_list[i];
-
-                    fprintf(output, "lw %s, %d($fp)", regName[reg], -12 - 4 * i);
+                for (int j = mips_reg_list_len - 1; j >= 0; j--) {
+                    int reg = mips_reg_list[j];
+                    fprintf(output, "lw %s, %d($fp)", regName[reg], -12 - 4 * j);
                     mips_fprintf_comment(output, "# RETURN %s: 恢复寄存器%s\n", var, regName[reg]);
-                    
                 }
             }
             
@@ -231,50 +316,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             
             // 释放栈空间
             fprintf(output, "addi $sp, $sp, %d\n", frame_size); 
-            // mips_fprintf_comment(output, "# RETURN %s: 释放栈空间\n", var);
             fprintf(output, "jr $ra\n\n");
-            // mips_fprintf_comment(output, "# RETURN %s: 返回\n\n", var);
             
-            continue;
-        }
-        
-        // CALL
-        if (strstr(line, ":= CALL") != NULL) {
-            char result[64], callee[64];
-            sscanf(line, "%s := CALL %s", result, callee);
-
-            fprintf(output, "jal %s", callee);
-            mips_fprintf_comment(output, "# CALL %s: 调用函数\n", callee);
-            param_count = 0;
-
-            int reg = get_operand_reg(result, output);
-            fprintf(output, "move %s, $v0", regName[reg]);
-            mips_fprintf_comment(output, "# CALL %s: 保存返回值\n", callee);
-            continue;
-        }        
-        
-        // PARAM
-        if (strncmp(line, "PARAM", 5) == 0) {
-            char param[64];
-            sscanf(line, "PARAM %s", param);
-            
-            static int param_index = 0;
-            int reg = Allocate(param, output);
-            fprintf(output, "lw %s, %d($fp)", regName[reg], 4 * (param_count - param_index));
-            mips_fprintf_comment(output, "# PARAM %s: 读取第%d个参数\n", param, param_index + 1);
-            param_index++;
-            continue;
-        }
-        
-        // ARG
-        if (strncmp(line, "ARG", 3) == 0) {
-            char arg[64];
-            sscanf(line, "ARG %s", arg);
-            int reg = get_operand_reg(arg, output);
-            fprintf(output, "subu $sp, $sp, 4");
-            mips_fprintf_comment(output, "# ARG %s: 压栈参数\n", arg);
-            fprintf(output, "sw %s, 0($sp)\n", regName[reg]);
-            param_count++;
             continue;
         }
         
@@ -336,8 +379,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             sscanf(line, "READ %s", var);
             
             // 保存返回地址
-            fprintf(output, "addi $sp, $sp, -4");
-            mips_fprintf_comment(output, "# READ %s: 保存返回地址\n", var);
+            // fprintf(output, "addi $sp, $sp, -4");
+            // mips_fprintf_comment(output, "# READ %s: 保存返回地址\n", var);
             fprintf(output, "sw $ra, 0($sp)\n");
             
             // 调用read函数
@@ -346,8 +389,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             
             // 恢复返回地址
             fprintf(output, "lw $ra, 0($sp)\n");
-            fprintf(output, "addi $sp, $sp, 4");
-            mips_fprintf_comment(output, "# READ %s: 恢复返回地址\n", var);
+            // fprintf(output, "addi $sp, $sp, 4");
+            // mips_fprintf_comment(output, "# READ %s: 恢复返回地址\n", var);
             
             // 将返回值存储到目标变量
             int reg = Allocate(var, output);
@@ -369,8 +412,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             mips_fprintf_comment(output, "# WRITE %s: 将值移动到$a0\n", var);
             
             // 保存返回地址
-            fprintf(output, "subu $sp, $sp, 4");
-            mips_fprintf_comment(output, "# WRITE %s: 保存返回地址\n", var);
+            // fprintf(output, "subu $sp, $sp, 4");
+            // mips_fprintf_comment(output, "# WRITE %s: 保存返回地址\n", var);
             fprintf(output, "sw $ra, 0($sp)\n");
             
             // 调用write函数
@@ -379,8 +422,8 @@ void translate_to_mips(FILE *input, FILE *output) {
             
             // 恢复返回地址
             fprintf(output, "lw $ra, 0($sp)\n");
-            fprintf(output, "addi $sp, $sp, 4");
-            mips_fprintf_comment(output, "# WRITE %s: 恢复返回地址\n", var);
+            // fprintf(output, "addi $sp, $sp, 4");
+            // mips_fprintf_comment(output, "# WRITE %s: 恢复返回地址\n", var);
             continue;
         }
         
