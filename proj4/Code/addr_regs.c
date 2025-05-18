@@ -80,7 +80,7 @@ static void insert_symbol(const char *var_name, int size) {
     addr_desc->size = size;      // 设置数组大小
     
     // 更新栈偏移量（数组需要对齐到4字节边界）
-    int aligned_size = size * 4;  // 向上取整到4的倍数
+    int aligned_size = size * 4;
     interSymbolTable.stack_offset += aligned_size;
     
     // 创建新的中间代码符号表节点
@@ -110,7 +110,7 @@ void declare_array(const char* var_name, int size) {
     snprintf(arr_name, sizeof(arr_name), "&%s", var_name);
 
     insert_symbol(arr_name, size);
-    interSymbolTable.stack_offset += size * 4;  // 更新栈偏移量
+    // interSymbolTable.stack_offset += size * 4;  // 更新栈偏移量
 }
 
 

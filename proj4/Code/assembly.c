@@ -70,15 +70,21 @@ static int handle_function_args(const char* func_name, int start_line, FILE* out
     char arg_name[64];
     int i = start_line;
     
-    // 向前查找所有ARG指令
+    // 先统计参数数量
     while (i >= 0 && strncmp(ic.lines[i], "ARG", 3) == 0) {
+        arg_count++;
+        i--;
+    }
+    
+    // 从上往下处理参数（从最后一个ARG开始）
+    i = start_line - arg_count + 1;
+    while (i <= start_line) {
         sscanf(ic.lines[i], "ARG %s", arg_name);
         int reg = get_operand_reg(arg_name, output);
         fprintf(output, "subu $sp, $sp, 4\n");
         fprintf(output, "sw %s, 0($sp)", regName[reg]);
         mips_fprintf_comment(output, "# ARG %s: 压栈参数\n", arg_name);
-        arg_count++;
-        i--;
+        i++;
     }
     
     return arg_count * 4;  // 返回参数占用的栈空间大小
