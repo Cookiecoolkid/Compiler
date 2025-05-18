@@ -60,5 +60,6 @@ AddressDescriptor* ensure_symbol(const char* var, FILE* output);
 void spill_variable(const char* var, FILE* output);
 int get_operand_reg(const char* operand, FILE* output);
 void declare_array(const char* var_name, int size, FILE* output);
+void free_all_regs(void);
 
 #endif // ADDR_REGS_H

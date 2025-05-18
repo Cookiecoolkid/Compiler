@@ -31,6 +31,14 @@ void spill_variable(const char* var, FILE* output) {
     if (addr_desc->reg_index >= 0) {
         int reg = addr_desc->reg_index;
         fprintf(output, "sw %s, %d($fp)\n", regName[reg],-BASE_VAR_OFFSET -addr_desc->stack_offset);
+        // fprintf(output, "sw produce by var: %s\n", var);
+        // // fprintf addr_desc 内容
+        // fprintf(output, "addr_desc->var_name: %s\n", addr_desc->var_name);
+        // fprintf(output, "addr_desc->reg_index: %d\n", addr_desc->reg_index);
+        // fprintf(output, "addr_desc->stack_offset: %d\n", addr_desc->stack_offset);
+        // fprintf(output, "addr_desc->is_in_memory: %d\n", addr_desc->is_in_memory);
+        // fprintf(output, "addr_desc->size: %d\n", addr_desc->size);
+        // fprintf(output, "addr_desc->is_array: %d\n", addr_desc->is_array);
         
         // 更新地址描述符
         addr_desc->is_in_memory = 1;
@@ -125,6 +133,16 @@ void init_registers() {
     }
 }
 
+// 清空所有寄存器状态
+void free_all_regs() {
+    for (int i = 0; i < mips_reg_list_len; ++i) {
+        int reg = mips_reg_list[i];
+        reg_desc[reg].var_name = NULL;
+        reg_desc[reg].is_used = 0;
+        reg_desc[reg].timestamp = 0;
+    }
+}
+
 // 查找空闲寄存器，如果没有则返回最久未使用的寄存器
 static int find_free_reg() {
     // 先找空闲寄存器
@@ -158,12 +176,15 @@ int Allocate(const char* var, FILE* output) {
     // 更新寄存器状态
     reg_desc[reg].timestamp = ++reg_timestamp_counter;
     reg_desc[reg].is_used = 1;
+    reg_desc[reg].var_name = NULL;  // 先清除旧变量名
+    
     if (var != NULL) {  // 只有当变量名不为NULL时才设置
         reg_desc[reg].var_name = strdup(var);
         // 更新变量的地址描述符
         AddressDescriptor* addr_desc = ensure_symbol(var, output);
         if (addr_desc != NULL) {  // 确保地址描述符不为NULL
             addr_desc->reg_index = reg;
+            // addr_desc->is_in_memory = 0;  // 变量现在在寄存器中
         }
     }
     return reg;

@@ -5,7 +5,7 @@ import gdb
 def setup_debug():
     # 设置断点并运行程序
     gdb.execute('b process_expression')
-    gdb.execute('run ../Test/Tests/inputs/A-4.cmm ../Test/Inter/A-4.ir ../Test/Output/A-4.s')
+    gdb.execute('run ../Test/Tests/inputs/B-2.cmm ../Test/Inter/B-2.ir ../Test/Output/B-2.s')
     gdb.execute('layout src')
     gdb.execute('set pagination off')
 

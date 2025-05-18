@@ -243,6 +243,9 @@ void translate_to_mips(FILE *input, FILE *output) {
             sscanf(line, "FUNCTION %s :", func_name);
             strcpy(current_function, func_name);
             
+            // 清空所有寄存器状态
+            free_all_regs();
+            
             // 计算固定保存区域大小（$ra, $fp, 寄存器等）
             int fixed_size = 8 + 4 * mips_reg_list_len;  // $ra, $fp, 寄存器保存区域
             frame_size = fixed_size;  // 总栈帧大小
