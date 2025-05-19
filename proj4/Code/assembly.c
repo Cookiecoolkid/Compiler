@@ -4,8 +4,9 @@
 #include <assert.h>
 #include "assembly.h"
 #include "addr_regs.h"
+#include "command.h"
 
-#define MIPS_COMMENT  // 需要注释时取消注释
+// #define MIPS_COMMENT  // 需要注释时取消注释
 #ifdef MIPS_COMMENT
 #define mips_fprintf_comment(fp, fmt, ...) fprintf(fp, fmt, __VA_ARGS__)
 #else
@@ -37,11 +38,13 @@ static IntermediateCode ic;  // 存储所有中间代码
 // 读取所有中间代码到数组
 static void read_all_intermediate_code(FILE* input, IntermediateCode* ic) {
     ic->count = 0;
-    while (fgets(ic->lines[ic->count], MAX_LINE_LENGTH, input) && ic->count < MAX_LINES - 1) {
-        ic->lines[ic->count][strcspn(ic->lines[ic->count], "\n")] = 0;  // 移除换行符
-        if (strlen(ic->lines[ic->count]) > 0) {  // 忽略空行
-            ic->count++;
-        }
+    InterCodeNode* current = get_inter_code_list();
+    
+    while (current != NULL && ic->count < MAX_LINES - 1) {
+        strncpy(ic->lines[ic->count], current->line, MAX_LINE_LENGTH - 1);
+        ic->lines[ic->count][MAX_LINE_LENGTH - 1] = '\0';
+        ic->count++;
+        current = current->next;
     }
 }
 

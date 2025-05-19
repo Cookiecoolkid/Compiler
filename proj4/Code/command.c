@@ -9,6 +9,24 @@ char* strdup(const char* s);
 unsigned labelTag = 0;
 unsigned tempTag = 0;
 
+// 全局中间代码链表
+static InterCodeNode* inter_code_list = NULL;
+static InterCodeNode* inter_code_tail = NULL;
+
+// 获取中间代码链表头
+InterCodeNode* get_inter_code_list() {
+    return inter_code_list;
+}
+
+// 清空中间代码链表
+void clear_inter_code_list() {
+    while (inter_code_list != NULL) {
+        InterCodeNode* temp = inter_code_list;
+        inter_code_list = inter_code_list->next;
+        free(temp);
+    }
+    inter_code_tail = NULL;
+}
 
 command create_command(op_type op, operand arg1, operand arg2, operand result, relop rel) {
     command cmd = (command)malloc(sizeof(struct command_));
@@ -120,7 +138,7 @@ char* command_to_string(command cmd) {
             snprintf(str, 256, "LABEL %s :", cmd->result->name);
             break;
         case FUNCTION_OP:
-            snprintf(str, 256, "\nFUNCTION %s :", cmd->result->name);
+            snprintf(str, 256, "FUNCTION %s :", cmd->result->name);
             break;
         case ASSIGN:
             snprintf(str, 256, "%s := %s", cmd->result->name, cmd->arg1->name);
@@ -185,23 +203,37 @@ char* command_to_string(command cmd) {
     return str;
 }
 
+// 修改append_command_to_file函数
 void append_command_to_file(command cmd, FILE* file) {
-    if (cmd == NULL || file == NULL) {
+    if (cmd == NULL) {
         return;
     }
 
+    // 获取命令的字符串表示
     char* str = command_to_string(cmd);
     if (str == NULL) {
         return;
     }
 
-    fprintf(file, "%s\n", str);
+    // 创建新的链表节点
+    InterCodeNode* new_node = (InterCodeNode*)malloc(sizeof(InterCodeNode));
+    strncpy(new_node->line, str, MAX_LINE_LENGTH - 1);
+    new_node->line[MAX_LINE_LENGTH - 1] = '\0';
+    new_node->next = NULL;
     
-    // 释放内存
-    // free(str);
-    // free_command(cmd);
+    // 添加到链表尾部
+    if (inter_code_tail == NULL) {
+        inter_code_list = inter_code_tail = new_node;
+    } else {
+        inter_code_tail->next = new_node;
+        inter_code_tail = new_node;
+    }
+    
+    // 同时写入文件（保持向后兼容）
+    if (file != NULL) {
+        fprintf(file, "%s\n", str);
+    }
 }
-
 
 void free_command(command cmd) {
     if (cmd != NULL) {

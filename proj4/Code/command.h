@@ -9,6 +9,7 @@
 #define NULL_OP NULL
 #define NULL_RELOP 0
 #define INT_FLOAT_SIZE 4
+#define MAX_LINE_LENGTH 256
 
 // 定义操作类型枚举
 typedef enum {
@@ -86,7 +87,15 @@ char* command_to_string(command cmd);
 void free_command(command cmd);
 void free_operand(operand op);
 
-void append_command_to_file(command cmd, FILE* file);
+// 中间代码链表节点
+typedef struct InterCodeNode {
+    char line[MAX_LINE_LENGTH];
+    struct InterCodeNode* next;
+} InterCodeNode;
 
+// 函数声明
+InterCodeNode* get_inter_code_list();
+void clear_inter_code_list();
+void append_command_to_file(command cmd, FILE* file);
 
 #endif // __COMMAND_H
