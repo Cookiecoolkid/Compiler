@@ -54,8 +54,13 @@ static int handle_function_params(const char* func_name, int start_line, FILE* o
     // 计算参数数量并处理每个参数
     while (i < ic.count && strncmp(ic.lines[i], "PARAM", 5) == 0) {
         sscanf(ic.lines[i], "PARAM %s", param_name);
+        // 将参数作为普通变量插入符号表
         int reg = Allocate(param_name, output);
-        fprintf(output, "lw %s, %d($fp)", regName[reg], 4 * param_count);
+        fprintf(output, "lw %s, %d($fp)\n", regName[reg], 4 * param_count);
+
+        AddressDescriptor* addr_desc = ensure_symbol(param_name, output);
+        fprintf(output, "sw %s, %d($fp)", regName[reg], - addr_desc->stack_offset);
+
         mips_fprintf_comment(output, "# PARAM %s: 读取第%d个参数\n", param_name, param_count + 1);
         param_count++;
         i++;
@@ -131,8 +136,20 @@ static void handle_binary_op(const char* x, const char* y, const char* z, const 
         mips_fprintf_comment(output, "# in handle_binary_op: %s := %s / %s (get quotient)\n", x, y, z);
     }
     
-    // 将结果写回内存
+    // 将结果写回内存 释放寄存器
     spill_variable(x, output);
+    if (y[0] != '#') {
+        spill_variable(y, output);
+    } else {
+        reg_desc[ry].is_used = 0;
+        reg_desc[ry].var_name = NULL;
+    }
+    if (z[0] != '#') {
+        spill_variable(z, output);
+    } else {
+        reg_desc[rz].is_used = 0;
+        reg_desc[rz].var_name = NULL;
+    }
 }
 
 // 处理赋值操作

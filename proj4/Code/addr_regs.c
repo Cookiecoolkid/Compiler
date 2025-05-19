@@ -31,8 +31,7 @@ void spill_variable(const char* var, FILE* output) {
     if (addr_desc->reg_index >= 0) {
         int reg = addr_desc->reg_index;
         fprintf(output, "sw %s, %d($fp)\n", regName[reg],-BASE_VAR_OFFSET -addr_desc->stack_offset);
-        // fprintf(output, "sw produce by var: %s\n", var);
-        // // fprintf addr_desc 内容
+        // fprintf(output, "sw produce by var: %s  and reg.var_name: %s\n", var, reg_desc[reg].var_name);
         // fprintf(output, "addr_desc->var_name: %s\n", addr_desc->var_name);
         // fprintf(output, "addr_desc->reg_index: %d\n", addr_desc->reg_index);
         // fprintf(output, "addr_desc->stack_offset: %d\n", addr_desc->stack_offset);
@@ -184,7 +183,6 @@ int Allocate(const char* var, FILE* output) {
         AddressDescriptor* addr_desc = ensure_symbol(var, output);
         if (addr_desc != NULL) {  // 确保地址描述符不为NULL
             addr_desc->reg_index = reg;
-            // addr_desc->is_in_memory = 0;  // 变量现在在寄存器中
         }
     }
     return reg;
