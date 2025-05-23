@@ -18,7 +18,7 @@ static void LiveVariableAnalysis_teardown(LiveVariableAnalysis *t) {
 static bool
 LiveVariableAnalysis_isForward (LiveVariableAnalysis *t) {
     // TODO: return isForward?;
-    TODO();
+    return false;
 }
 
 static Set_IR_var*
@@ -63,7 +63,7 @@ LiveVariableAnalysis_meetInto (LiveVariableAnalysis *t,
      * meet: union/intersect?
      * return VCALL(*target, union_with/intersect_with?, fact);
      */
-    TODO();
+    return VCALL(*target, union_with, fact);
 }
 
 void LiveVariableAnalysis_transferStmt (LiveVariableAnalysis *t,
@@ -87,7 +87,19 @@ void LiveVariableAnalysis_transferStmt (LiveVariableAnalysis *t,
      *      VCALL(*fact, insert/delete?, def); // kill/gen ?
      *  }
      */
-    TODO();
+    
+    // 活跃变量分析： f_s = use_s U (OUT[s] - def_s)
+    // 一个 Stmt 最多有一个 def 变量
+    if (def != IR_VAR_NONE) {
+        VCALL(*fact, delete, def);
+    }
+    for (unsigned i = 0; i < use.use_cnt; i++) {
+        IR_val use_val = use.use_vec[i];
+        if (!use_val.is_const) {
+            IR_var use = use_val.var;
+            VCALL(*fact, insert, use);
+        }
+    }
 }
 
 bool LiveVariableAnalysis_transferBlock (LiveVariableAnalysis *t,
@@ -166,7 +178,11 @@ static bool block_remove_dead_def (LiveVariableAnalysis *t, IR_block *blk) {
              *      updated = true;
              *  }
              */
-            TODO();
+            // 如果 def 在 new_out_fact(OUT[s] 表示 s 的出口处活跃变量集合) 中不存在，则 stmt 是死代码
+            if (VCALL(*new_out_fact, exist, def) == false) {
+                stmt->dead = true;
+                updated = true;
+            }
         }
         LiveVariableAnalysis_transferStmt(t, stmt, new_out_fact);
     }

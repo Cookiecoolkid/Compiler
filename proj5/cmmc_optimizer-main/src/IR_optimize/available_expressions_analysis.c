@@ -58,7 +58,8 @@ AvailableExpressionsAnalysis_newBoundaryFact (AvailableExpressionsAnalysis *t, I
      * OutFact[Entry] = (Bottom: empty set) / (Top: universal set) / other?
      * return NEW(Fact_set_var, is_top?);
      */
-    TODO();
+    // 对于must-analysis，初始边界 entry 块事实是空集（bottom）
+    return NEW(Fact_set_var, false);
 }
 
 static Fact_set_var*
@@ -68,7 +69,8 @@ AvailableExpressionsAnalysis_newInitialFact (AvailableExpressionsAnalysis *t) {
      * InitFact = (Bottom: empty set) / (Top: universal set) / other?
      * return NEW(Fact_set_var, is_top?);
      */
-    TODO();
+    // 对于非 entry 块，初始事实是全集（top）
+    return NEW(Fact_set_var, true);
 }
 
 static void
@@ -112,7 +114,8 @@ AvailableExpressionsAnalysis_meetInto (AvailableExpressionsAnalysis *t,
      * IN[blk] = union_with / intersect_with (all OUT[pred_blk]) ?
      * return VCALL(target->set, union_with / intersect_with, &fact->set);
      */
-    TODO();
+    // 对于must-analysis，IN[blk] = intersect_with (all OUT[pred_blk])
+    return VCALL(target->set, intersect_with, &fact->set);
 }
 
 void AvailableExpressionsAnalysis_transferStmt (AvailableExpressionsAnalysis *t,
