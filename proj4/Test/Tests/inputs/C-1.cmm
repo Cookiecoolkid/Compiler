@@ -17,6 +17,12 @@ int main() {
         sortArrayData[outerIdx] = read();
         outerIdx = outerIdx + 1;
     }
+
+    outerIdx = 0;
+    while (outerIdx < arrayDataSize) {
+        write(sortArrayData[outerIdx]);
+        outerIdx = outerIdx + 1;
+    }   
     
     outerIdx = 0;
     outerLimit = arrayDataSize - 1;
@@ -31,6 +37,11 @@ int main() {
             }
             innerIdx = innerIdx + 1;
         }
+        write(sortArrayData[0]);
+        write(sortArrayData[1]);
+        write(sortArrayData[2]);
+        write(sortArrayData[3]);
+        write(sortArrayData[4]);
         outerIdx = outerIdx + 1;
     }
     

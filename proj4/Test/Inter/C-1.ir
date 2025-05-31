@@ -26,73 +26,112 @@ outerIdx_ := temp6
 GOTO label0
 LABEL label2 :
 outerIdx_ := #0
-temp7 := arrayDataSize_ - #1
-outerLimit_ := temp7
 LABEL label3 :
-IF outerIdx_ < outerLimit_ GOTO label4
+IF outerIdx_ < arrayDataSize_ GOTO label4
 GOTO label5
 LABEL label4 :
+temp7 := &sortArrayData_
+temp8 := outerIdx_ * #4
+temp9 := temp8 + temp7
+temp10 := *temp9
+WRITE temp10
+temp11 := outerIdx_ + #1
+outerIdx_ := temp11
+GOTO label3
+LABEL label5 :
+outerIdx_ := #0
+temp12 := arrayDataSize_ - #1
+outerLimit_ := temp12
+LABEL label6 :
+IF outerIdx_ < outerLimit_ GOTO label7
+GOTO label8
+LABEL label7 :
 innerIdx_ := #0
 ARG outerIdx_
 ARG arrayDataSize_
-temp8 := CALL calculateInnerLoopLimit
-innerLimit_ := temp8
-LABEL label6 :
-IF innerIdx_ < innerLimit_ GOTO label7
-GOTO label8
-LABEL label7 :
-temp9 := &sortArrayData_
-temp10 := innerIdx_ * #4
-temp11 := temp10 + temp9
-temp12 := *temp11
-temp13 := &sortArrayData_
-temp14 := innerIdx_ + #1
-temp15 := temp14 * #4
-temp16 := temp15 + temp13
-temp17 := *temp16
-IF temp12 > temp17 GOTO label9
-GOTO label10
+temp13 := CALL calculateInnerLoopLimit
+innerLimit_ := temp13
 LABEL label9 :
+IF innerIdx_ < innerLimit_ GOTO label10
+GOTO label11
+LABEL label10 :
+temp14 := &sortArrayData_
+temp15 := innerIdx_ * #4
+temp16 := temp15 + temp14
+temp17 := *temp16
 temp18 := &sortArrayData_
-temp19 := innerIdx_ * #4
-temp20 := temp19 + temp18
-temp21 := *temp20
-swapHolder_ := temp21
-temp22 := &sortArrayData_
-temp23 := innerIdx_ * #4
-temp24 := temp23 + temp22
-temp25 := &sortArrayData_
-temp26 := innerIdx_ + #1
-temp27 := temp26 * #4
-temp28 := temp27 + temp25
-temp29 := *temp28
-*temp24 := temp29
+temp19 := innerIdx_ + #1
+temp20 := temp19 * #4
+temp21 := temp20 + temp18
+temp22 := *temp21
+IF temp17 > temp22 GOTO label12
+GOTO label13
+LABEL label12 :
+temp23 := &sortArrayData_
+temp24 := innerIdx_ * #4
+temp25 := temp24 + temp23
+temp26 := *temp25
+swapHolder_ := temp26
+temp27 := &sortArrayData_
+temp28 := innerIdx_ * #4
+temp29 := temp28 + temp27
 temp30 := &sortArrayData_
 temp31 := innerIdx_ + #1
 temp32 := temp31 * #4
 temp33 := temp32 + temp30
-*temp33 := swapHolder_
-LABEL label10 :
-temp34 := innerIdx_ + #1
-innerIdx_ := temp34
+temp34 := *temp33
+*temp29 := temp34
+temp35 := &sortArrayData_
+temp36 := innerIdx_ + #1
+temp37 := temp36 * #4
+temp38 := temp37 + temp35
+*temp38 := swapHolder_
+LABEL label13 :
+temp39 := innerIdx_ + #1
+innerIdx_ := temp39
+GOTO label9
+LABEL label11 :
+temp40 := &sortArrayData_
+temp41 := #0 * #4
+temp42 := temp41 + temp40
+temp43 := *temp42
+WRITE temp43
+temp44 := &sortArrayData_
+temp45 := #1 * #4
+temp46 := temp45 + temp44
+temp47 := *temp46
+WRITE temp47
+temp48 := &sortArrayData_
+temp49 := #2 * #4
+temp50 := temp49 + temp48
+temp51 := *temp50
+WRITE temp51
+temp52 := &sortArrayData_
+temp53 := #3 * #4
+temp54 := temp53 + temp52
+temp55 := *temp54
+WRITE temp55
+temp56 := &sortArrayData_
+temp57 := #4 * #4
+temp58 := temp57 + temp56
+temp59 := *temp58
+WRITE temp59
+temp60 := outerIdx_ + #1
+outerIdx_ := temp60
 GOTO label6
 LABEL label8 :
-temp35 := outerIdx_ + #1
-outerIdx_ := temp35
-GOTO label3
-LABEL label5 :
 outerIdx_ := #0
-LABEL label11 :
-IF outerIdx_ < arrayDataSize_ GOTO label12
-GOTO label13
-LABEL label12 :
-temp36 := &sortArrayData_
-temp37 := outerIdx_ * #4
-temp38 := temp37 + temp36
-temp39 := *temp38
-WRITE temp39
-temp40 := outerIdx_ + #1
-outerIdx_ := temp40
-GOTO label11
-LABEL label13 :
+LABEL label14 :
+IF outerIdx_ < arrayDataSize_ GOTO label15
+GOTO label16
+LABEL label15 :
+temp61 := &sortArrayData_
+temp62 := outerIdx_ * #4
+temp63 := temp62 + temp61
+temp64 := *temp63
+WRITE temp64
+temp65 := outerIdx_ + #1
+outerIdx_ := temp65
+GOTO label14
+LABEL label16 :
 RETURN #0

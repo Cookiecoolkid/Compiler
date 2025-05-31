@@ -1,0 +1,64 @@
+
+FUNCTION calculateBase :
+PARAM inputParam_
+IF inputParam_ > #50 GOTO label0
+GOTO label1
+LABEL label0 :
+temp0 := inputParam_ / #2
+baseRes_ := temp0
+RETURN baseRes_
+GOTO label2
+LABEL label1 :
+temp1 := inputParam_ + #10
+baseRes_ := temp1
+RETURN baseRes_
+LABEL label2 :
+
+FUNCTION determineIndex :
+PARAM baseIn_
+PARAM inputOther_
+temp2 := baseIn_ + inputOther_
+temp3 := temp2 / #5
+indexRes_ := temp3
+IF indexRes_ < #0 GOTO label3
+GOTO label4
+LABEL label3 :
+RETURN #0
+LABEL label4 :
+IF indexRes_ > #4 GOTO label5
+GOTO label6
+LABEL label5 :
+RETURN #4
+LABEL label6 :
+RETURN indexRes_
+
+FUNCTION main :
+DEC dataArray_ 12
+temp4 := &dataArray_
+temp5 := #0 * #4
+temp6 := temp5 + temp4
+*temp6 := #1
+temp7 := &dataArray_
+temp8 := #1 * #4
+temp9 := temp8 + temp7
+*temp9 := #2
+temp10 := &dataArray_
+temp11 := #2 * #4
+temp12 := temp11 + temp10
+*temp12 := #3
+temp13 := &dataArray_
+temp14 := #0 * #4
+temp15 := temp14 + temp13
+temp16 := *temp15
+WRITE temp16
+temp17 := &dataArray_
+temp18 := #1 * #4
+temp19 := temp18 + temp17
+temp20 := *temp19
+WRITE temp20
+temp21 := &dataArray_
+temp22 := #2 * #4
+temp23 := temp22 + temp21
+temp24 := *temp23
+WRITE temp24
+RETURN #0

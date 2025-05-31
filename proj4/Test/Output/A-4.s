@@ -23,98 +23,134 @@ move $v0, $0
 jr $ra
 
 main:
-subu $sp, $sp, 80# FUNCTION main: 分配栈帧
-sw $fp, 76($sp)# FUNCTION main: 保存旧帧指针
-sw $ra, 72($sp)# FUNCTION main: 保存返回地址
-addiu $fp, $sp, 80# FUNCTION main: 设置新的帧指针
-li $t0, 0# in process_expression: totalSum_ := #0
-sw $t0, -256($fp)
-addi $sp, $sp, -4# READ temp0: 保存返回地址
-sw $ra, 0($sp)
-jal read# READ temp0: 调用read函数
-lw $ra, 0($sp)
-addi $sp, $sp, 4# READ temp0: 恢复返回地址
-move $t0, $v0# READ temp0: 将返回值存储到temp0
-move $t1, $t0# in process_expression: n_ := temp0
-sw $t1, -264($fp)
-li $t1, 1# in process_expression: i_ := #1
-sw $t1, -268($fp)
-label0 :
-lw $t1, -268($fp)
-lw $t2, -264($fp)
-ble $t1, $t2, label1
-j label2# GOTO label2
-label1 :
-li $t3, 1# in process_expression: j_ := #1
-sw $t3, -272($fp)
-label3 :
-lw $t3, -272($fp)
-ble $t3, $t2, label4
-j label5# GOTO label5
-label4 :
-li $t4, 10
-mul $t5, $t1, $t4# in handle_binary_op: temp1 := i_ * #10
-sw $t5, -276($fp)
-lw $t5, -276($fp)
-add $t6, $t5, $t3# in handle_binary_op: temp2 := temp1 + j_
-sw $t6, -280($fp)
-lw $t7, -280($fp)
-move $t6, $t7# in process_expression: currentVal_ := temp2
-sw $t6, -284($fp)
-add $t6, $t1, $t3# in handle_binary_op: temp3 := i_ + j_
-sw $t6, -288($fp)
-lw $s0, -288($fp)
-move $t6, $s0# in process_expression: tempSum_ := temp3
-sw $t6, -292($fp)
-lw $t6, -292($fp)
-li $s1, 2
-div $t6, $s1
-mflo $s2# in handle_binary_op: temp4 := tempSum_ / #2 (get quotient)
-sw $s2, -296($fp)
-lw $s2, -296($fp)
-li $s3, 2
-mul $s4, $s2, $s3# in handle_binary_op: temp5 := temp4 * #2
-sw $s4, -300($fp)
-lw $s4, -300($fp)
-beq $s4, $t6, label6
-j label7# GOTO label7
-label6 :
-lw $s5, -256($fp)
-lw $s6, -284($fp)
-add $s7, $s5, $s6# in handle_binary_op: temp6 := totalSum_ + currentVal_
-sw $s7, -304($fp)
-lw $s7, -304($fp)
-move $s5, $s7# in process_expression: totalSum_ := temp6
-sw $s5, -256($fp)
-label7 :
-li $s5, 1
-add $t8, $t3, $s5# in handle_binary_op: temp7 := j_ + #1
-sw $t8, -308($fp)
-lw $t8, -308($fp)
-move $t3, $t8# in process_expression: j_ := temp7
-sw $t3, -272($fp)
-j label3# GOTO label3
-label5 :
-li $t3, 1
-add $t9, $t1, $t3# in handle_binary_op: temp8 := i_ + #1
-sw $t9, -312($fp)
-lw $t9, -312($fp)
-move $t1, $t9# in process_expression: i_ := temp8
-sw $t1, -268($fp)
-j label0# GOTO label0
-label2 :
-lw $t1, -256($fp)
-move $a0, $t1# WRITE totalSum_: 将值移动到$a0
-subu $sp, $sp, 4# WRITE totalSum_: 保存返回地址
-sw $ra, 0($sp)
-jal write# WRITE totalSum_: 调用write函数
-lw $ra, 0($sp)
-addi $sp, $sp, 4# WRITE totalSum_: 恢复返回地址
-sw $t0, -260($fp)
+subu $sp, $sp, 80
+sw $fp, 76($sp)
+sw $ra, 72($sp)
+addiu $fp, $sp, 80
+subu $sp, $sp, 4
 li $t0, 0
-move $v0, $t0# RETURN #0: 设置返回值
-lw $ra, -8($fp)# RETURN #0: 恢复返回地址
-lw $fp, -4($fp)# RETURN #0: 恢复帧指针
+sw $t0, -84($fp)
+addi $sp, $sp, -4
+sw $ra, 0($sp)
+jal read
+lw $ra, 0($sp)
+addi $sp, $sp, 4
+subu $sp, $sp, 4
+move $t0, $v0
+subu $sp, $sp, 4
+move $t1, $t0
+sw $t1, -92($fp)
+subu $sp, $sp, 4
+li $t1, 1
+sw $t1, -96($fp)
+label0 :
+lw $t1, -96($fp)
+lw $t2, -92($fp)
+ble $t1, $t2, label1
+j label2
+label1 :
+subu $sp, $sp, 4
+li $t3, 1
+sw $t3, -100($fp)
+label3 :
+lw $t3, -100($fp)
+lw $t2, -92($fp)
+ble $t3, $t2, label4
+j label5
+label4 :
+lw $t1, -96($fp)
+li $t4, 10
+subu $sp, $sp, 4
+mul $t5, $t1, $t4
+sw $t5, -104($fp)
+sw $t1, -96($fp)
+lw $t1, -104($fp)
+lw $t3, -100($fp)
+subu $sp, $sp, 4
+add $t4, $t1, $t3
+sw $t4, -108($fp)
+sw $t1, -104($fp)
+sw $t3, -100($fp)
+subu $sp, $sp, 4
+lw $t3, -108($fp)
+move $t1, $t3
+sw $t1, -112($fp)
+lw $t1, -96($fp)
+lw $t4, -100($fp)
+subu $sp, $sp, 4
+add $t5, $t1, $t4
+sw $t5, -116($fp)
+sw $t1, -96($fp)
+sw $t4, -100($fp)
+subu $sp, $sp, 4
+lw $t4, -116($fp)
+move $t1, $t4
+sw $t1, -120($fp)
+lw $t1, -120($fp)
+li $t5, 2
+subu $sp, $sp, 4
+div $t1, $t5
+mflo $t6
+sw $t6, -124($fp)
+sw $t1, -120($fp)
+lw $t1, -124($fp)
+li $t5, 2
+subu $sp, $sp, 4
+mul $t6, $t1, $t5
+sw $t6, -128($fp)
+sw $t1, -124($fp)
+lw $t1, -128($fp)
+lw $t5, -120($fp)
+beq $t1, $t5, label6
+j label7
+label6 :
+lw $t6, -84($fp)
+lw $t7, -112($fp)
+subu $sp, $sp, 4
+add $s0, $t6, $t7
+sw $s0, -132($fp)
+sw $t6, -84($fp)
+sw $t7, -112($fp)
+lw $t6, -84($fp)
+lw $t7, -132($fp)
+move $t6, $t7
+sw $t6, -84($fp)
+label7 :
+lw $t6, -100($fp)
+li $s0, 1
+subu $sp, $sp, 4
+add $s1, $t6, $s0
+sw $s1, -136($fp)
+sw $t6, -100($fp)
+lw $t6, -100($fp)
+lw $s0, -136($fp)
+move $t6, $s0
+sw $t6, -100($fp)
+j label3
+label5 :
+lw $t6, -96($fp)
+li $s1, 1
+subu $sp, $sp, 4
+add $s2, $t6, $s1
+sw $s2, -140($fp)
+sw $t6, -96($fp)
+lw $t6, -96($fp)
+lw $s1, -140($fp)
+move $t6, $s1
+sw $t6, -96($fp)
+j label0
+label2 :
+lw $t6, -84($fp)
+move $a0, $t6
+subu $sp, $sp, 4
+sw $ra, 0($sp)
+jal write
+lw $ra, 0($sp)
+addi $sp, $sp, 4
+li $s2, 0
+move $v0, $s2
+lw $ra, -8($fp)
+lw $fp, -4($fp)
 addi $sp, $sp, 80
 jr $ra
 

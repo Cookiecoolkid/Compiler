@@ -23,223 +23,247 @@ move $v0, $0
 jr $ra
 
 processHelper:
-subu $sp, $sp, 80# FUNCTION processHelper: 分配栈帧
-sw $fp, 76($sp)# FUNCTION processHelper: 保存旧帧指针
-sw $ra, 72($sp)# FUNCTION processHelper: 保存返回地址
-addiu $fp, $sp, 80# FUNCTION processHelper: 设置新的帧指针
-sw $t0, -12($fp)# FUNCTION processHelper: 保存寄存器 $t0
-sw $t1, -16($fp)# FUNCTION processHelper: 保存寄存器 $t1
-sw $t2, -20($fp)# FUNCTION processHelper: 保存寄存器 $t2
-sw $t3, -24($fp)# FUNCTION processHelper: 保存寄存器 $t3
-sw $t4, -28($fp)# FUNCTION processHelper: 保存寄存器 $t4
-sw $t5, -32($fp)# FUNCTION processHelper: 保存寄存器 $t5
-sw $t6, -36($fp)# FUNCTION processHelper: 保存寄存器 $t6
-sw $t7, -40($fp)# FUNCTION processHelper: 保存寄存器 $t7
-sw $s0, -44($fp)# FUNCTION processHelper: 保存寄存器 $s0
-sw $s1, -48($fp)# FUNCTION processHelper: 保存寄存器 $s1
-sw $s2, -52($fp)# FUNCTION processHelper: 保存寄存器 $s2
-sw $s3, -56($fp)# FUNCTION processHelper: 保存寄存器 $s3
-sw $s4, -60($fp)# FUNCTION processHelper: 保存寄存器 $s4
-sw $s5, -64($fp)# FUNCTION processHelper: 保存寄存器 $s5
-sw $s6, -68($fp)# FUNCTION processHelper: 保存寄存器 $s6
-sw $s7, -72($fp)# FUNCTION processHelper: 保存寄存器 $s7
-sw $t8, -76($fp)# FUNCTION processHelper: 保存寄存器 $t8
-sw $t9, -80($fp)# FUNCTION processHelper: 保存寄存器 $t9
-lw $t0, 0($fp)# PARAM val_: 读取第1个参数
+subu $sp, $sp, 80
+sw $fp, 76($sp)
+sw $ra, 72($sp)
+addiu $fp, $sp, 80
+sw $t0, -12($fp)
+sw $t1, -16($fp)
+sw $t2, -20($fp)
+sw $t3, -24($fp)
+sw $t4, -28($fp)
+sw $t5, -32($fp)
+sw $t6, -36($fp)
+sw $t7, -40($fp)
+sw $s0, -44($fp)
+sw $s1, -48($fp)
+sw $s2, -52($fp)
+sw $s3, -56($fp)
+sw $s4, -60($fp)
+sw $s5, -64($fp)
+sw $s6, -68($fp)
+sw $s7, -72($fp)
+sw $t8, -76($fp)
+sw $t9, -80($fp)
+subu $sp, $sp, 4
+lw $t0, 0($fp)
+sw $t0, -84($fp)
 li $t1, 0
 blt $t0, $t1, label0
-j label1# GOTO label1
+j label1
 label0 :
 li $t2, 2
-mul $t3, $t0, $t2# in handle_binary_op: temp0 := val_ * #2
-sw $t3, -260($fp)
-lw $t3, -260($fp)
-move $v0, $t3# RETURN temp0: 设置返回值
-lw $t9, -80($fp)# RETURN temp0: 恢复寄存器$t9
-lw $t8, -76($fp)# RETURN temp0: 恢复寄存器$t8
-lw $s7, -72($fp)# RETURN temp0: 恢复寄存器$s7
-lw $s6, -68($fp)# RETURN temp0: 恢复寄存器$s6
-lw $s5, -64($fp)# RETURN temp0: 恢复寄存器$s5
-lw $s4, -60($fp)# RETURN temp0: 恢复寄存器$s4
-lw $s3, -56($fp)# RETURN temp0: 恢复寄存器$s3
-lw $s2, -52($fp)# RETURN temp0: 恢复寄存器$s2
-lw $s1, -48($fp)# RETURN temp0: 恢复寄存器$s1
-lw $s0, -44($fp)# RETURN temp0: 恢复寄存器$s0
-lw $t7, -40($fp)# RETURN temp0: 恢复寄存器$t7
-lw $t6, -36($fp)# RETURN temp0: 恢复寄存器$t6
-lw $t5, -32($fp)# RETURN temp0: 恢复寄存器$t5
-lw $t4, -28($fp)# RETURN temp0: 恢复寄存器$t4
-lw $t3, -24($fp)# RETURN temp0: 恢复寄存器$t3
-lw $t2, -20($fp)# RETURN temp0: 恢复寄存器$t2
-lw $t1, -16($fp)# RETURN temp0: 恢复寄存器$t1
-lw $t0, -12($fp)# RETURN temp0: 恢复寄存器$t0
-lw $ra, -8($fp)# RETURN temp0: 恢复返回地址
-lw $fp, -4($fp)# RETURN temp0: 恢复帧指针
+subu $sp, $sp, 4
+mul $t3, $t0, $t2
+sw $t3, -88($fp)
+sw $t0, -84($fp)
+lw $t0, -88($fp)
+move $v0, $t0
+lw $t9, -80($fp)
+lw $t8, -76($fp)
+lw $s7, -72($fp)
+lw $s6, -68($fp)
+lw $s5, -64($fp)
+lw $s4, -60($fp)
+lw $s3, -56($fp)
+lw $s2, -52($fp)
+lw $s1, -48($fp)
+lw $s0, -44($fp)
+lw $t7, -40($fp)
+lw $t6, -36($fp)
+lw $t5, -32($fp)
+lw $t4, -28($fp)
+lw $t3, -24($fp)
+lw $t2, -20($fp)
+lw $t1, -16($fp)
+lw $t0, -12($fp)
+lw $ra, -8($fp)
+lw $fp, -4($fp)
 addi $sp, $sp, 80
 jr $ra
 
 label1 :
-li $t4, 10
-add $t5, $t0, $t4# in handle_binary_op: temp1 := val_ + #10
-sw $t5, -264($fp)
-lw $t5, -264($fp)
-move $v0, $t5# RETURN temp1: 设置返回值
-lw $t9, -80($fp)# RETURN temp1: 恢复寄存器$t9
-lw $t8, -76($fp)# RETURN temp1: 恢复寄存器$t8
-lw $s7, -72($fp)# RETURN temp1: 恢复寄存器$s7
-lw $s6, -68($fp)# RETURN temp1: 恢复寄存器$s6
-lw $s5, -64($fp)# RETURN temp1: 恢复寄存器$s5
-lw $s4, -60($fp)# RETURN temp1: 恢复寄存器$s4
-lw $s3, -56($fp)# RETURN temp1: 恢复寄存器$s3
-lw $s2, -52($fp)# RETURN temp1: 恢复寄存器$s2
-lw $s1, -48($fp)# RETURN temp1: 恢复寄存器$s1
-lw $s0, -44($fp)# RETURN temp1: 恢复寄存器$s0
-lw $t7, -40($fp)# RETURN temp1: 恢复寄存器$t7
-lw $t6, -36($fp)# RETURN temp1: 恢复寄存器$t6
-lw $t5, -32($fp)# RETURN temp1: 恢复寄存器$t5
-lw $t4, -28($fp)# RETURN temp1: 恢复寄存器$t4
-lw $t3, -24($fp)# RETURN temp1: 恢复寄存器$t3
-lw $t2, -20($fp)# RETURN temp1: 恢复寄存器$t2
-lw $t1, -16($fp)# RETURN temp1: 恢复寄存器$t1
-lw $t0, -12($fp)# RETURN temp1: 恢复寄存器$t0
-lw $ra, -8($fp)# RETURN temp1: 恢复返回地址
-lw $fp, -4($fp)# RETURN temp1: 恢复帧指针
+lw $t2, -84($fp)
+li $t3, 10
+subu $sp, $sp, 4
+add $t4, $t2, $t3
+sw $t4, -92($fp)
+sw $t2, -84($fp)
+lw $t2, -92($fp)
+move $v0, $t2
+lw $t9, -80($fp)
+lw $t8, -76($fp)
+lw $s7, -72($fp)
+lw $s6, -68($fp)
+lw $s5, -64($fp)
+lw $s4, -60($fp)
+lw $s3, -56($fp)
+lw $s2, -52($fp)
+lw $s1, -48($fp)
+lw $s0, -44($fp)
+lw $t7, -40($fp)
+lw $t6, -36($fp)
+lw $t5, -32($fp)
+lw $t4, -28($fp)
+lw $t3, -24($fp)
+lw $t2, -20($fp)
+lw $t1, -16($fp)
+lw $t0, -12($fp)
+lw $ra, -8($fp)
+lw $fp, -4($fp)
 addi $sp, $sp, 80
 jr $ra
 
 recursiveWithHelperCall:
-subu $sp, $sp, 80# FUNCTION recursiveWithHelperCall: 分配栈帧
-sw $fp, 76($sp)# FUNCTION recursiveWithHelperCall: 保存旧帧指针
-sw $ra, 72($sp)# FUNCTION recursiveWithHelperCall: 保存返回地址
-addiu $fp, $sp, 80# FUNCTION recursiveWithHelperCall: 设置新的帧指针
-sw $t0, -12($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t0
-sw $t1, -16($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t1
-sw $t2, -20($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t2
-sw $t3, -24($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t3
-sw $t4, -28($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t4
-sw $t5, -32($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t5
-sw $t6, -36($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t6
-sw $t7, -40($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t7
-sw $s0, -44($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s0
-sw $s1, -48($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s1
-sw $s2, -52($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s2
-sw $s3, -56($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s3
-sw $s4, -60($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s4
-sw $s5, -64($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s5
-sw $s6, -68($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s6
-sw $s7, -72($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $s7
-sw $t8, -76($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t8
-sw $t9, -80($fp)# FUNCTION recursiveWithHelperCall: 保存寄存器 $t9
-lw $t6, -4($fp)# PARAM n_: 读取第2个参数
-li $t7, 0
-ble $t6, $t7, label2
-j label3# GOTO label3
+subu $sp, $sp, 80
+sw $fp, 76($sp)
+sw $ra, 72($sp)
+addiu $fp, $sp, 80
+sw $t0, -12($fp)
+sw $t1, -16($fp)
+sw $t2, -20($fp)
+sw $t3, -24($fp)
+sw $t4, -28($fp)
+sw $t5, -32($fp)
+sw $t6, -36($fp)
+sw $t7, -40($fp)
+sw $s0, -44($fp)
+sw $s1, -48($fp)
+sw $s2, -52($fp)
+sw $s3, -56($fp)
+sw $s4, -60($fp)
+sw $s5, -64($fp)
+sw $s6, -68($fp)
+sw $s7, -72($fp)
+sw $t8, -76($fp)
+sw $t9, -80($fp)
+subu $sp, $sp, 4
+lw $t0, 0($fp)
+sw $t0, -84($fp)
+li $t1, 0
+ble $t0, $t1, label2
+j label3
 label2 :
-li $s0, 0
-move $v0, $s0# RETURN #0: 设置返回值
-lw $t9, -80($fp)# RETURN #0: 恢复寄存器$t9
-lw $t8, -76($fp)# RETURN #0: 恢复寄存器$t8
-lw $s7, -72($fp)# RETURN #0: 恢复寄存器$s7
-lw $s6, -68($fp)# RETURN #0: 恢复寄存器$s6
-lw $s5, -64($fp)# RETURN #0: 恢复寄存器$s5
-lw $s4, -60($fp)# RETURN #0: 恢复寄存器$s4
-lw $s3, -56($fp)# RETURN #0: 恢复寄存器$s3
-lw $s2, -52($fp)# RETURN #0: 恢复寄存器$s2
-lw $s1, -48($fp)# RETURN #0: 恢复寄存器$s1
-lw $s0, -44($fp)# RETURN #0: 恢复寄存器$s0
-lw $t7, -40($fp)# RETURN #0: 恢复寄存器$t7
-lw $t6, -36($fp)# RETURN #0: 恢复寄存器$t6
-lw $t5, -32($fp)# RETURN #0: 恢复寄存器$t5
-lw $t4, -28($fp)# RETURN #0: 恢复寄存器$t4
-lw $t3, -24($fp)# RETURN #0: 恢复寄存器$t3
-lw $t2, -20($fp)# RETURN #0: 恢复寄存器$t2
-lw $t1, -16($fp)# RETURN #0: 恢复寄存器$t1
-lw $t0, -12($fp)# RETURN #0: 恢复寄存器$t0
-lw $ra, -8($fp)# RETURN #0: 恢复返回地址
-lw $fp, -4($fp)# RETURN #0: 恢复帧指针
+li $t2, 0
+move $v0, $t2
+lw $t9, -80($fp)
+lw $t8, -76($fp)
+lw $s7, -72($fp)
+lw $s6, -68($fp)
+lw $s5, -64($fp)
+lw $s4, -60($fp)
+lw $s3, -56($fp)
+lw $s2, -52($fp)
+lw $s1, -48($fp)
+lw $s0, -44($fp)
+lw $t7, -40($fp)
+lw $t6, -36($fp)
+lw $t5, -32($fp)
+lw $t4, -28($fp)
+lw $t3, -24($fp)
+lw $t2, -20($fp)
+lw $t1, -16($fp)
+lw $t0, -12($fp)
+lw $ra, -8($fp)
+lw $fp, -4($fp)
 addi $sp, $sp, 80
 jr $ra
 
-j label4# GOTO label4
+j label4
 label3 :
-subu $sp, $sp, 4# ARG n_: 压栈参数
-sw $t6, 0($sp)
-jal processHelper# CALL processHelper: 调用函数
-move $s1, $v0# CALL processHelper: 保存返回值
-move $s2, $s1# in process_expression: helperVal_ := temp2
-sw $s2, -276($fp)
-li $s2, 2
-sub $s3, $t6, $s2# in handle_binary_op: temp3 := n_ - #2
-sw $s3, -280($fp)
-lw $s3, -280($fp)
-subu $sp, $sp, 4# ARG temp3: 压栈参数
-sw $s3, 0($sp)
-jal recursiveWithHelperCall# CALL recursiveWithHelperCall: 调用函数
-move $s4, $v0# CALL recursiveWithHelperCall: 保存返回值
-move $s5, $s4# in process_expression: recursiveVal_ := temp4
-sw $s5, -288($fp)
-lw $s5, -276($fp)
-lw $s6, -288($fp)
-add $s7, $s5, $s6# in handle_binary_op: temp5 := helperVal_ + recursiveVal_
-sw $s7, -292($fp)
-lw $s7, -292($fp)
-move $v0, $s7# RETURN temp5: 设置返回值
-lw $t9, -80($fp)# RETURN temp5: 恢复寄存器$t9
-lw $t8, -76($fp)# RETURN temp5: 恢复寄存器$t8
-lw $s7, -72($fp)# RETURN temp5: 恢复寄存器$s7
-lw $s6, -68($fp)# RETURN temp5: 恢复寄存器$s6
-lw $s5, -64($fp)# RETURN temp5: 恢复寄存器$s5
-lw $s4, -60($fp)# RETURN temp5: 恢复寄存器$s4
-lw $s3, -56($fp)# RETURN temp5: 恢复寄存器$s3
-lw $s2, -52($fp)# RETURN temp5: 恢复寄存器$s2
-lw $s1, -48($fp)# RETURN temp5: 恢复寄存器$s1
-lw $s0, -44($fp)# RETURN temp5: 恢复寄存器$s0
-lw $t7, -40($fp)# RETURN temp5: 恢复寄存器$t7
-lw $t6, -36($fp)# RETURN temp5: 恢复寄存器$t6
-lw $t5, -32($fp)# RETURN temp5: 恢复寄存器$t5
-lw $t4, -28($fp)# RETURN temp5: 恢复寄存器$t4
-lw $t3, -24($fp)# RETURN temp5: 恢复寄存器$t3
-lw $t2, -20($fp)# RETURN temp5: 恢复寄存器$t2
-lw $t1, -16($fp)# RETURN temp5: 恢复寄存器$t1
-lw $t0, -12($fp)# RETURN temp5: 恢复寄存器$t0
-lw $ra, -8($fp)# RETURN temp5: 恢复返回地址
-lw $fp, -4($fp)# RETURN temp5: 恢复帧指针
+subu $sp, $sp, 4
+sw $t0, 0($sp)
+jal processHelper
+addi $sp, $sp, 4
+subu $sp, $sp, 4
+move $t3, $v0
+subu $sp, $sp, 4
+move $t4, $t3
+sw $t4, -92($fp)
+li $t4, 2
+subu $sp, $sp, 4
+sub $t5, $t0, $t4
+sw $t5, -96($fp)
+sw $t0, -84($fp)
+lw $t0, -96($fp)
+subu $sp, $sp, 4
+sw $t0, 0($sp)
+jal recursiveWithHelperCall
+addi $sp, $sp, 4
+subu $sp, $sp, 4
+move $t4, $v0
+subu $sp, $sp, 4
+move $t5, $t4
+sw $t5, -104($fp)
+lw $t5, -92($fp)
+lw $t6, -104($fp)
+subu $sp, $sp, 4
+add $t7, $t5, $t6
+sw $t7, -108($fp)
+sw $t5, -92($fp)
+sw $t6, -104($fp)
+lw $t5, -108($fp)
+move $v0, $t5
+lw $t9, -80($fp)
+lw $t8, -76($fp)
+lw $s7, -72($fp)
+lw $s6, -68($fp)
+lw $s5, -64($fp)
+lw $s4, -60($fp)
+lw $s3, -56($fp)
+lw $s2, -52($fp)
+lw $s1, -48($fp)
+lw $s0, -44($fp)
+lw $t7, -40($fp)
+lw $t6, -36($fp)
+lw $t5, -32($fp)
+lw $t4, -28($fp)
+lw $t3, -24($fp)
+lw $t2, -20($fp)
+lw $t1, -16($fp)
+lw $t0, -12($fp)
+lw $ra, -8($fp)
+lw $fp, -4($fp)
 addi $sp, $sp, 80
 jr $ra
 
 label4 :
 main:
-subu $sp, $sp, 80# FUNCTION main: 分配栈帧
-sw $fp, 76($sp)# FUNCTION main: 保存旧帧指针
-sw $ra, 72($sp)# FUNCTION main: 保存返回地址
-addiu $fp, $sp, 80# FUNCTION main: 设置新的帧指针
-addi $sp, $sp, -4# READ temp6: 保存返回地址
+subu $sp, $sp, 80
+sw $fp, 76($sp)
+sw $ra, 72($sp)
+addiu $fp, $sp, 80
+addi $sp, $sp, -4
 sw $ra, 0($sp)
-jal read# READ temp6: 调用read函数
+jal read
 lw $ra, 0($sp)
-addi $sp, $sp, 4# READ temp6: 恢复返回地址
-move $t8, $v0# READ temp6: 将返回值存储到temp6
-move $t9, $t8# in process_expression: input_ := temp6
-sw $t9, -300($fp)
-lw $t9, -300($fp)
-subu $sp, $sp, 4# ARG input_: 压栈参数
-sw $t9, 0($sp)
-jal recursiveWithHelperCall# CALL recursiveWithHelperCall: 调用函数
-move $t1, $v0# CALL recursiveWithHelperCall: 保存返回值
-move $t2, $t1# in process_expression: finalResult_ := temp7
-sw $t2, -308($fp)
-lw $t2, -308($fp)
-move $a0, $t2# WRITE finalResult_: 将值移动到$a0
-subu $sp, $sp, 4# WRITE finalResult_: 保存返回地址
+addi $sp, $sp, 4
+subu $sp, $sp, 4
+move $t0, $v0
+subu $sp, $sp, 4
+move $t1, $t0
+sw $t1, -88($fp)
+lw $t1, -88($fp)
+subu $sp, $sp, 4
+sw $t1, 0($sp)
+jal recursiveWithHelperCall
+addi $sp, $sp, 4
+subu $sp, $sp, 4
+move $t2, $v0
+subu $sp, $sp, 4
+move $t3, $t2
+sw $t3, -96($fp)
+lw $t3, -96($fp)
+move $a0, $t3
+subu $sp, $sp, 4
 sw $ra, 0($sp)
-jal write# WRITE finalResult_: 调用write函数
+jal write
 lw $ra, 0($sp)
-addi $sp, $sp, 4# WRITE finalResult_: 恢复返回地址
-sw $t3, -260($fp)
-li $t3, 0
-move $v0, $t3# RETURN #0: 设置返回值
-lw $ra, -8($fp)# RETURN #0: 恢复返回地址
-lw $fp, -4($fp)# RETURN #0: 恢复帧指针
+addi $sp, $sp, 4
+li $t4, 0
+move $v0, $t4
+lw $ra, -8($fp)
+lw $fp, -4($fp)
 addi $sp, $sp, 80
 jr $ra
 

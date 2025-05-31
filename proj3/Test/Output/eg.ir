@@ -1,0 +1,8 @@
+
+FUNCTION main :
+a_ := #1
+b_ := #2
+c_ := #3
+temp0 := b_ * c_
+temp1 := a_ + temp0
+x_ := temp1

@@ -1,0 +1,28 @@
+int calculateBase(int inputParam) {
+    int baseRes;
+    if (inputParam > 50) {
+        baseRes = inputParam / 2;
+        return baseRes;
+    } else {
+        baseRes = inputParam + 10;
+        return baseRes;
+    }
+}
+
+int determineIndex(int baseIn, int inputOther) {
+    int indexRes = (baseIn + inputOther) / 5;
+    if (indexRes < 0) { return 0; }
+    if (indexRes > 4) { return 4; }
+    return indexRes;
+}
+
+int main() {
+    int dataArray[3];
+
+    dataArray[0]=1; dataArray[1]=2; dataArray[2]=3;
+
+    write(dataArray[0]);
+    write(dataArray[1]);
+    write(dataArray[2]);
+    return 0;
+}

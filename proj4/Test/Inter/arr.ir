@@ -1,0 +1,199 @@
+
+FUNCTION calculateBase :
+PARAM inputParam_
+IF inputParam_ > #50 GOTO label0
+GOTO label1
+LABEL label0 :
+temp0 := inputParam_ / #2
+baseRes_ := temp0
+RETURN baseRes_
+GOTO label2
+LABEL label1 :
+temp1 := inputParam_ + #10
+baseRes_ := temp1
+RETURN baseRes_
+LABEL label2 :
+
+FUNCTION determineIndex :
+PARAM baseIn_
+PARAM inputOther_
+temp2 := baseIn_ + inputOther_
+temp3 := temp2 / #5
+indexRes_ := temp3
+IF indexRes_ < #0 GOTO label3
+GOTO label4
+LABEL label3 :
+RETURN #0
+LABEL label4 :
+IF indexRes_ > #4 GOTO label5
+GOTO label6
+LABEL label5 :
+RETURN #4
+LABEL label6 :
+RETURN indexRes_
+
+FUNCTION main :
+DEC dataArray_ 20
+temp4 := &dataArray_
+temp5 := #0 * #4
+temp6 := temp5 + temp4
+*temp6 := #1
+temp7 := &dataArray_
+temp8 := #1 * #4
+temp9 := temp8 + temp7
+*temp9 := #2
+temp10 := &dataArray_
+temp11 := #2 * #4
+temp12 := temp11 + temp10
+*temp12 := #3
+temp13 := &dataArray_
+temp14 := #3 * #4
+temp15 := temp14 + temp13
+*temp15 := #4
+temp16 := &dataArray_
+temp17 := #4 * #4
+temp18 := temp17 + temp16
+*temp18 := #5
+temp19 := &dataArray_
+temp20 := #0 * #4
+temp21 := temp20 + temp19
+temp22 := *temp21
+WRITE temp22
+temp23 := &dataArray_
+temp24 := #1 * #4
+temp25 := temp24 + temp23
+temp26 := *temp25
+WRITE temp26
+temp27 := &dataArray_
+temp28 := #2 * #4
+temp29 := temp28 + temp27
+temp30 := *temp29
+WRITE temp30
+temp31 := &dataArray_
+temp32 := #3 * #4
+temp33 := temp32 + temp31
+temp34 := *temp33
+WRITE temp34
+temp35 := &dataArray_
+temp36 := #4 * #4
+temp37 := temp36 + temp35
+temp38 := *temp37
+WRITE temp38
+READ temp39
+val1_ := temp39
+READ temp40
+val2_ := temp40
+temp41 := &dataArray_
+temp42 := #0 * #4
+temp43 := temp42 + temp41
+temp44 := *temp43
+WRITE temp44
+temp45 := &dataArray_
+temp46 := #1 * #4
+temp47 := temp46 + temp45
+temp48 := *temp47
+WRITE temp48
+temp49 := &dataArray_
+temp50 := #2 * #4
+temp51 := temp50 + temp49
+temp52 := *temp51
+WRITE temp52
+temp53 := &dataArray_
+temp54 := #3 * #4
+temp55 := temp54 + temp53
+temp56 := *temp55
+WRITE temp56
+temp57 := &dataArray_
+temp58 := #4 * #4
+temp59 := temp58 + temp57
+temp60 := *temp59
+WRITE temp60
+ARG val1_
+temp61 := CALL calculateBase
+baseOut_ := temp61
+ARG val2_
+ARG baseOut_
+temp62 := CALL determineIndex
+targetIdx_ := temp62
+temp63 := &dataArray_
+temp64 := targetIdx_ * #4
+temp65 := temp64 + temp63
+temp66 := *temp65
+originalVal_ := temp66
+temp67 := &dataArray_
+temp68 := #0 * #4
+temp69 := temp68 + temp67
+temp70 := *temp69
+WRITE temp70
+temp71 := &dataArray_
+temp72 := #1 * #4
+temp73 := temp72 + temp71
+temp74 := *temp73
+WRITE temp74
+temp75 := &dataArray_
+temp76 := #2 * #4
+temp77 := temp76 + temp75
+temp78 := *temp77
+WRITE temp78
+temp79 := &dataArray_
+temp80 := #3 * #4
+temp81 := temp80 + temp79
+temp82 := *temp81
+WRITE temp82
+temp83 := &dataArray_
+temp84 := #4 * #4
+temp85 := temp84 + temp83
+temp86 := *temp85
+WRITE temp86
+IF baseOut_ > #30 GOTO label10
+GOTO label8
+LABEL label10 :
+IF val2_ > #0 GOTO label7
+GOTO label8
+LABEL label7 :
+temp87 := &dataArray_
+temp88 := targetIdx_ * #4
+temp89 := temp88 + temp87
+*temp89 := baseOut_
+GOTO label9
+LABEL label8 :
+temp90 := &dataArray_
+temp91 := targetIdx_ * #4
+temp92 := temp91 + temp90
+temp93 := originalVal_ * #2
+*temp92 := temp93
+LABEL label9 :
+temp94 := &dataArray_
+temp95 := targetIdx_ * #4
+temp96 := temp95 + temp94
+temp97 := *temp96
+modifiedVal_ := temp97
+temp98 := &dataArray_
+temp99 := #0 * #4
+temp100 := temp99 + temp98
+temp101 := *temp100
+WRITE temp101
+temp102 := &dataArray_
+temp103 := #1 * #4
+temp104 := temp103 + temp102
+temp105 := *temp104
+WRITE temp105
+temp106 := &dataArray_
+temp107 := #2 * #4
+temp108 := temp107 + temp106
+temp109 := *temp108
+WRITE temp109
+temp110 := &dataArray_
+temp111 := #3 * #4
+temp112 := temp111 + temp110
+temp113 := *temp112
+WRITE temp113
+temp114 := &dataArray_
+temp115 := #4 * #4
+temp116 := temp115 + temp114
+temp117 := *temp116
+WRITE temp117
+WRITE targetIdx_
+WRITE originalVal_
+WRITE modifiedVal_
+RETURN #0

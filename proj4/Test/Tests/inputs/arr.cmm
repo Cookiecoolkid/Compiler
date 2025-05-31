@@ -1,0 +1,73 @@
+int calculateBase(int inputParam) {
+    int baseRes;
+    if (inputParam > 50) {
+        baseRes = inputParam / 2;
+        return baseRes;
+    } else {
+        baseRes = inputParam + 10;
+        return baseRes;
+    }
+}
+
+int determineIndex(int baseIn, int inputOther) {
+    int indexRes = (baseIn + inputOther) / 5;
+    if (indexRes < 0) { return 0; }
+    if (indexRes > 4) { return 4; }
+    return indexRes;
+}
+
+int main() {
+    int dataArray[5];
+    int val1;
+    int val2;
+    int baseOut;
+    int targetIdx;
+    int originalVal;
+    int modifiedVal;
+
+    dataArray[0]=1; dataArray[1]=2; dataArray[2]=3; dataArray[3]=4; dataArray[4]=5;
+
+    write(dataArray[0]);
+    write(dataArray[1]);
+    write(dataArray[2]);
+    write(dataArray[3]);
+    write(dataArray[4]);
+    
+    val1 = read();
+    val2 = read();
+
+    write(dataArray[0]);
+    write(dataArray[1]);
+    write(dataArray[2]);
+    write(dataArray[3]);
+    write(dataArray[4]);
+
+    baseOut = calculateBase(val1);
+    targetIdx = determineIndex(baseOut, val2);
+    originalVal = dataArray[targetIdx];
+
+    write(dataArray[0]);
+    write(dataArray[1]);
+    write(dataArray[2]);
+    write(dataArray[3]);
+    write(dataArray[4]);
+
+    if (baseOut > 30 && val2 > 0) {
+        dataArray[targetIdx] = baseOut;
+    } else {
+        dataArray[targetIdx] = originalVal * 2;
+    }
+    modifiedVal = dataArray[targetIdx];
+
+    write(dataArray[0]);
+    write(dataArray[1]);
+    write(dataArray[2]);
+    write(dataArray[3]);
+    write(dataArray[4]);
+
+    write(targetIdx);
+    write(originalVal);
+    write(modifiedVal);
+
+    return 0;
+}
