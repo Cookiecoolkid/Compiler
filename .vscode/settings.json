@@ -1,5 +1,14 @@
 {
   "files.associations": {
-    "assembly.h": "c"
+    "assembly.h": "c",
+    "ir.h": "c",
+    "copy_propagation.h": "c",
+    "*.tcc": "cpp",
+    "deque": "cpp",
+    "string": "cpp",
+    "unordered_map": "cpp",
+    "vector": "cpp",
+    "ir_parse.h": "c",
+    "semantic.h": "c"
   }
 }

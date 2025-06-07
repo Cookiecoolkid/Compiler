@@ -7,6 +7,7 @@
 #include <constant_propagation.h>
 #include <available_expressions_analysis.h>
 #include <copy_propagation.h>
+#include <loop_optimize.h>
 
 void remove_dead_block(IR_function *func) {
     // remove
@@ -87,5 +88,7 @@ void IR_optimize() {
             if(!updated) break;
         }
 
+        //// Loop Optimize
+        loop_optimize(func);
     }
 }

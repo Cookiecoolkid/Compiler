@@ -38,6 +38,17 @@ DEF_SET(IR_var)
 typedef Set_IR_var *Set_ptr_IR_var;
 DEF_MAP(IR_block_ptr, Set_ptr_IR_var)
 
+
+typedef IR_block *IR_block_ptr;
+// 定义必要的类型
+DEF_SET(IR_block_ptr)
+DEF_MAP(IR_var, IR_block_ptr)
+DEF_MAP(IR_var, Set_IR_block_ptr)
+DEF_MAP(IR_var, IR_var)  // 用于记录基础归纳变量到家族变量的映射
+
+typedef Set_IR_block_ptr *Set_ptr_IR_block;
+
+
 //// ============================ Optimize ============================
 
 extern void remove_dead_block(IR_function *func);

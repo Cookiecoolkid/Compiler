@@ -8,7 +8,9 @@ int main(int argc, char *argv[]) {
     IR_parse(argc >= 2 ? argv[1] : NULL);
     IR_optimize();
     IR_output(argc >= 3 ? argv[2] : NULL);
+    /*
     if(ir_program_global != NULL)
         RDELETE(IR_program, ir_program_global);
+    */
     return 0;
 }

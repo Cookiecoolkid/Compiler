@@ -1,0 +1,17 @@
+{
+    "C_Cpp.errorSquiggles": "Disabled",
+    "files.associations": {
+        "*.vt": "verilog",
+        "*.tcc": "c",
+        "deque": "c",
+        "list": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "unordered_set": "c",
+        "vector": "c",
+        "loop_invariant_code_motion.h": "c",
+        "dataflow_analysis.h": "c",
+        "loop_analysis.h": "c",
+        "loop_optimize.h": "c"
+    }
+}
